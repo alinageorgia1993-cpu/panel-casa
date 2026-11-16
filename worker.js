@@ -81,6 +81,47 @@ export default {
         return response("Could not retrieve Hermes data: " + String(error), 502);
       }
     }
+
+    if (url.pathname === "/api/tasks" || url.pathname.startsWith("/api/tasks/")) {
+      if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
+      if (!env.DB) return response(JSON.stringify({ error: "TASKS_DATABASE_NOT_CONFIGURED" }), 503, "application/json; charset=utf-8");
+      const id = url.pathname.split("/")[3];
+      try {
+        if (request.method === "GET" && !id) {
+          const result = await env.DB.prepare("SELECT id,title,category,due_date,due_time,priority,recurrence,reminder_at,status,created_at,completed_at FROM tasks ORDER BY CASE WHEN status='open' THEN 0 ELSE 1 END, COALESCE(due_date,'9999-12-31'), created_at DESC").all();
+          return response(JSON.stringify({ tasks: result.results || [] }), 200, "application/json; charset=utf-8");
+        }
+        if (request.method === "POST" && !id) {
+          const body = await request.json();
+          const title = String(body.title || "").trim().slice(0,160);
+          const categories = ["PLANTS","HOUSE","ERRANDS","ADMIN","ARCHIBALD","PERSONAL"];
+          const priorities = ["low","normal","high"];
+          if (!title) return response(JSON.stringify({ error: "TITLE_REQUIRED" }), 400, "application/json; charset=utf-8");
+          const taskId = crypto.randomUUID();
+          const now = new Date().toISOString();
+          await env.DB.prepare("INSERT INTO tasks (id,title,category,due_date,priority,status,created_at,updated_at) VALUES (?,?,?,?,?,'open',?,?)")
+            .bind(taskId,title,categories.includes(body.category)?body.category:"HOUSE",body.due_date || null,priorities.includes(body.priority)?body.priority:"normal",now,now).run();
+          return response(JSON.stringify({ ok: true, id: taskId }), 201, "application/json; charset=utf-8");
+        }
+        if (id && request.method === "PATCH") {
+          const body = await request.json();
+          const allowed = ["open","done"];
+          if (!allowed.includes(body.status)) return response(JSON.stringify({ error: "INVALID_STATUS" }), 400, "application/json; charset=utf-8");
+          const now = new Date().toISOString();
+          const result = await env.DB.prepare("UPDATE tasks SET status=?, completed_at=?, updated_at=? WHERE id=?")
+            .bind(body.status,body.status==="done"?now:null,now,id).run();
+          return response(JSON.stringify({ ok: true, changes: result.meta && result.meta.changes || 0 }), 200, "application/json; charset=utf-8");
+        }
+        if (id && request.method === "DELETE") {
+          const result = await env.DB.prepare("DELETE FROM tasks WHERE id=?").bind(id).run();
+          return response(JSON.stringify({ ok: true, changes: result.meta && result.meta.changes || 0 }), 200, "application/json; charset=utf-8");
+        }
+        return response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), 405, "application/json; charset=utf-8");
+      } catch (error) {
+        return response(JSON.stringify({ error: "TASKS_API_ERROR", detail: String(error) }), 500, "application/json; charset=utf-8");
+      }
+    }
+
     return env.ASSETS.fetch(request);
   }
 };
