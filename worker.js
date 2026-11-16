@@ -5,7 +5,7 @@ const UPSTREAM = {
 };
 const CORS = {
   "Access-Control-Allow-Origin": "https://alinageorgia1993-cpu.github.io",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
   "Vary": "Origin"
 };
@@ -85,32 +85,59 @@ export default {
     if (url.pathname === "/api/tasks" || url.pathname.startsWith("/api/tasks/")) {
       if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
       if (!env.DB) return response(JSON.stringify({ error: "TASKS_DATABASE_NOT_CONFIGURED" }), 503, "application/json; charset=utf-8");
-      const id = url.pathname.split("/")[3];
+      const parts = url.pathname.split("/").filter(Boolean);
+      const id = parts[2];
       try {
         if (request.method === "GET" && !id) {
-          const result = await env.DB.prepare("SELECT id,title,category,due_date,due_time,priority,recurrence,reminder_at,status,created_at,completed_at FROM tasks ORDER BY CASE WHEN status='open' THEN 0 ELSE 1 END, COALESCE(due_date,'9999-12-31'), created_at DESC").all();
-          return response(JSON.stringify({ tasks: result.results || [] }), 200, "application/json; charset=utf-8");
+          const result = await env.DB.prepare("SELECT id,title,category,due_date,due_time,priority,recurrence,reminder_at,status,created_at,completed_at,subtasks FROM tasks ORDER BY CASE WHEN status='open' THEN 0 ELSE 1 END, COALESCE(due_date,'9999-12-31'), created_at DESC").all();
+          const tasks = (result.results || []).map(t => {
+            let subtasks = [];
+            try { subtasks = JSON.parse(t.subtasks || "[]"); } catch (_) {}
+            return { ...t, subtasks };
+          });
+          return response(JSON.stringify({ tasks }), 200, "application/json; charset=utf-8");
         }
         if (request.method === "POST" && !id) {
           const body = await request.json();
           const title = String(body.title || "").trim().slice(0,160);
           const categories = ["PLANTS","HOUSE","ERRANDS","ADMIN","ARCHIBALD","PERSONAL"];
           const priorities = ["low","normal","high"];
+          const recurrences = ["daily","weekly","monthly"];
           if (!title) return response(JSON.stringify({ error: "TITLE_REQUIRED" }), 400, "application/json; charset=utf-8");
           const taskId = crypto.randomUUID();
           const now = new Date().toISOString();
-          await env.DB.prepare("INSERT INTO tasks (id,title,category,due_date,priority,status,created_at,updated_at) VALUES (?,?,?,?,?,'open',?,?)")
-            .bind(taskId,title,categories.includes(body.category)?body.category:"HOUSE",body.due_date || null,priorities.includes(body.priority)?body.priority:"normal",now,now).run();
+          await env.DB.prepare("INSERT INTO tasks (id,title,category,due_date,due_time,priority,recurrence,status,created_at,updated_at,subtasks) VALUES (?,?,?,?,?,?,?,'open',?,?,?)")
+            .bind(taskId,title,categories.includes(body.category)?body.category:"HOUSE",body.due_date || null,body.due_time || null,priorities.includes(body.priority)?body.priority:"normal",recurrences.includes(body.recurrence)?body.recurrence:null,now,now,JSON.stringify([])).run();
           return response(JSON.stringify({ ok: true, id: taskId }), 201, "application/json; charset=utf-8");
         }
         if (id && request.method === "PATCH") {
           const body = await request.json();
-          const allowed = ["open","done"];
-          if (!allowed.includes(body.status)) return response(JSON.stringify({ error: "INVALID_STATUS" }), 400, "application/json; charset=utf-8");
+          const current = await env.DB.prepare("SELECT id,title,category,due_date,priority,recurrence,status,subtasks FROM tasks WHERE id=?").bind(id).first();
+          if (!current) return response(JSON.stringify({ error: "TASK_NOT_FOUND" }), 404, "application/json; charset=utf-8");
           const now = new Date().toISOString();
-          const result = await env.DB.prepare("UPDATE tasks SET status=?, completed_at=?, updated_at=? WHERE id=?")
-            .bind(body.status,body.status==="done"?now:null,now,id).run();
-          return response(JSON.stringify({ ok: true, changes: result.meta && result.meta.changes || 0 }), 200, "application/json; charset=utf-8");
+          if (Object.prototype.hasOwnProperty.call(body, "status")) {
+            if (!["open","done"].includes(body.status)) return response(JSON.stringify({ error: "INVALID_STATUS" }), 400, "application/json; charset=utf-8");
+            const completedAt = body.status === "done" ? now : null;
+            await env.DB.prepare("UPDATE tasks SET status=?, completed_at=?, updated_at=? WHERE id=?").bind(body.status,completedAt,now,id).run();
+            if (body.status === "done" && current.status !== "done" && ["daily","weekly","monthly"].includes(current.recurrence)) {
+              const base = current.due_date || now.slice(0,10);
+              const d = new Date(base + "T12:00:00Z");
+              if (current.recurrence === "daily") d.setUTCDate(d.getUTCDate()+1);
+              if (current.recurrence === "weekly") d.setUTCDate(d.getUTCDate()+7);
+              if (current.recurrence === "monthly") { const day=d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()+1); const last=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate(); d.setUTCDate(Math.min(day,last)); }
+              const nextDate = d.toISOString().slice(0,10);
+              await env.DB.prepare("INSERT INTO tasks (id,title,category,due_date,priority,recurrence,status,created_at,updated_at,subtasks) VALUES (?,?,?,?,?,?,'open',?,?,?)")
+                .bind(crypto.randomUUID(),current.title,current.category,nextDate,current.priority,current.recurrence,now,now,JSON.stringify([])).run();
+            }
+          }
+          if (Object.prototype.hasOwnProperty.call(body, "due_date")) {
+            await env.DB.prepare("UPDATE tasks SET due_date=?, updated_at=? WHERE id=?").bind(body.due_date || null,now,id).run();
+          }
+          if (Object.prototype.hasOwnProperty.call(body, "subtasks")) {
+            const subtasks = Array.isArray(body.subtasks) ? body.subtasks.slice(0,30).map(s => ({ id:String(s.id || crypto.randomUUID()), title:String(s.title || "").trim().slice(0,120), done:!!s.done })).filter(s=>s.title) : [];
+            await env.DB.prepare("UPDATE tasks SET subtasks=?, updated_at=? WHERE id=?").bind(JSON.stringify(subtasks),now,id).run();
+          }
+          return response(JSON.stringify({ ok: true }), 200, "application/json; charset=utf-8");
         }
         if (id && request.method === "DELETE") {
           const result = await env.DB.prepare("DELETE FROM tasks WHERE id=?").bind(id).run();
