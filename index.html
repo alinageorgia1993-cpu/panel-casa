@@ -623,7 +623,7 @@ $("tasks-list").addEventListener("click",function(e){
   var title=prompt("Nombre de la tarea:",t.title);if(title===null)return;if(!title.trim()){taskMessage("El nombre no puede estar vacío.");return;}
   var category=prompt("Categoría (PLANTS, HOUSE, ERRANDS, ADMIN, ARCHIBALD, PERSONAL):",t.category);if(category===null)return;category=category.trim().toUpperCase();
   if(["PLANTS","HOUSE","ERRANDS","ADMIN","ARCHIBALD","PERSONAL"].indexOf(category)<0){taskMessage("Categoría no válida.");return;}
-  var due=prompt("Fecha (AAAA-MM-DD) o vacío para quitarla:",t.due_date||"");if(due===null)return;if(due&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(due)){taskMessage("Fecha no válida. Usa AAAA-MM-DD.");return;}
+  var due=prompt("Fecha (AAAA-MM-DD) o vacío para quitarla:",t.due_date||"");if(due===null)return;if(due&&!/^\d{4}-\d{2}-\d{2}$/.test(due)){taskMessage("Fecha no válida. Usa AAAA-MM-DD.");return;}
   var priority=prompt("Prioridad (high, normal, low):",t.priority||"normal");if(priority===null)return;priority=priority.trim().toLowerCase();if(["high","normal","low"].indexOf(priority)<0){taskMessage("Prioridad no válida.");return;}
   var recurrence=prompt("Repetición (daily, weekly, monthly) o vacío:",t.recurrence||"");if(recurrence===null)return;recurrence=recurrence.trim().toLowerCase();if(recurrence&&!["daily","weekly","monthly"].includes(recurrence)){taskMessage("Repetición no válida.");return;}
   taskRequest(TASKS_API+"/"+encodeURIComponent(editId),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:title.trim(),category:category,due_date:due||null,priority:priority,recurrence:recurrence||null})}).then(taskLoad).catch(function(err){taskMessage("No se pudo editar: "+err.message);});return;
