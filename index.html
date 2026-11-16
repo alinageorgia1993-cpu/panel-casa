@@ -565,7 +565,7 @@ function taskLoad(){
 function taskRender(){
  var now=new Date(),today=taskDate(now),weekEnd=new Date(now.getFullYear(),now.getMonth(),now.getDate()+7),end=taskDate(weekEnd);
  var shown=taskItems.filter(function(t){if(t.status==="done")return false;if(!t.due_date)return taskView==="today";return taskView==="today"?t.due_date<=today:t.due_date>=today&&t.due_date<end;});
- shown.sort(function(a,b){var p={high:0,normal:1,low:2};return (a.due_date||"9999").localeCompare(b.due_date||"9999")||(p[a.priority]||1)-(p[b.priority]||1);});
+ shown.sort(function(a,b){var p={high:0,normal:1,low:2};return (a.due_date||"9999").localeCompare(b.due_date||"9999")||(p[a.priority]===undefined?1:p[a.priority])-(p[b.priority]===undefined?1:p[b.priority]);});
  if(!shown.length){$("tasks-list").innerHTML='<div class="tasks-empty">No tienes tareas pendientes en '+(taskView==="today"?"Today":"los próximos 7 días")+'.</div>';return;}
  var out="";
  shown.forEach(function(t){out+='<div class="task-row"><input type="checkbox" data-task-done="'+taskEsc(t.id)+'" aria-label="Completar tarea"><div><div class="task-title">'+taskEsc(t.title)+'</div><div class="task-meta">'+taskEsc(t.category)+' · '+(t.due_date?taskEsc(t.due_date):"Sin fecha")+'</div></div><div class="task-priority">'+(t.priority==="high"?"ALTA":t.priority==="low"?"BAJA":"")+'</div><button type="button" class="task-delete" data-task-delete="'+taskEsc(t.id)+'" aria-label="Eliminar tarea">×</button></div>';});
