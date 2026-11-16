@@ -1,6 +1,7 @@
 const UPSTREAM = {
   churchilllaan: "https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22:%22NL:S:64051510%22,%22town%22:%22Eindhoven%22,%22name%22:%22Churchilllaan%22%7D",
-  woensxl: "https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22:%22NL:S:64052010%22,%22town%22:%22Eindhoven%22,%22name%22:%22WoensXL/ZH%20Catharina%22%7D"
+  woensxl: "https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22:%22NL:S:64052010%22,%22town%22:%22Eindhoven%22,%22name%22:%22WoensXL/ZH%20Catharina%22%7D",
+  bic: "https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22:%22NL:S:64100160%22,%22town%22:%22Eindhoven%22,%22name%22:%22BIC%22%7D"
 };
 const CORS = {
   "Access-Control-Allow-Origin": "https://alinageorgia1993-cpu.github.io",
