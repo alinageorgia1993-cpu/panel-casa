@@ -583,12 +583,13 @@ function taskLoad(){
  }).catch(function(){taskMessage("No se pudieron cargar las tareas. Comprueba la conexión con Cloudflare.");$("tasks-list").innerHTML='<div class="tasks-empty">No se ha podido conectar con la lista de tareas.</div>';});
 }
 function taskRender(){
- var now=new Date(),today=taskDate(now),weekEnd=new Date(now.getFullYear(),now.getMonth(),now.getDate()+7),end=taskDate(weekEnd);
+ var now=new Date(),today=taskDate(now),weekEnd=new Date(now.getFullYear(),now.getMonth(),now.getDate()+7),end=weekEnd.getFullYear()+"-"+dos(weekEnd.getMonth()+1)+"-"+dos(weekEnd.getDate());
  var shown=taskItems.filter(function(t){
   if(taskView==="history")return t.status==="done";
   if(t.status==="done")return false;
   if(!t.due_date)return taskView==="today";
-  return taskView==="today"?t.due_date<=today:t.due_date>=today&&t.due_date<end;
+  if(taskView==="today")return t.due_date<=today;
+  return t.due_date>=today&&t.due_date<=end;
  });
  shown.sort(function(a,b){var p={high:0,normal:1,low:2};return (a.due_date||"9999").localeCompare(b.due_date||"9999")||(p[a.priority]===undefined?1:p[a.priority])-(p[b.priority]===undefined?1:p[b.priority]);});
  if(!shown.length){$("tasks-list").innerHTML='<div class="tasks-empty">'+(taskView==="history"?"Todavía no hay tareas completadas.":taskView==="today"?"No tienes tareas pendientes para hoy.":"No tienes tareas pendientes en los próximos 7 días.")+'</div>';return;}
@@ -596,7 +597,7 @@ function taskRender(){
  shown.forEach(function(t){
   var done=t.status==="done",subs=Array.isArray(t.subtasks)?t.subtasks:[];
   var recurrence=t.recurrence?({daily:" · diaria",weekly:" · semanal",monthly:" · mensual"}[t.recurrence]||""):"";
-  out+='<div class="task-row'+(done?' done':'')+'"><input type="checkbox" data-task-done="'+taskEsc(t.id)+'" '+(done?'checked':'')+' aria-label="Completar tarea"><div><div class="task-title">'+taskEsc(t.title)+'</div><div class="task-meta">'+taskEsc(t.category)+' · '+(t.due_date?taskEsc(t.due_date):"Sin fecha")+taskEsc(recurrence)+'</div></div><div class="task-priority">'+(t.priority==="high"?"ALTA":t.priority==="low"?"BAJA":"")+'</div><div class="task-actions">'+(!done?'<button type="button" data-task-subadd="'+taskEsc(t.id)+'">＋ paso</button><button type="button" data-task-postpone="'+taskEsc(t.id)+'">Aplazar</button>':'')+'</div><button type="button" class="task-delete" data-task-delete="'+taskEsc(t.id)+'" aria-label="Eliminar tarea">×</button>';
+  out+='<div class="task-row'+(done?' done':'')+'"><input type="checkbox" data-task-done="'+taskEsc(t.id)+'" '+(done?'checked':'')+' aria-label="Completar tarea"><div><div class="task-title">'+taskEsc(t.title)+'</div><div class="task-meta">'+taskEsc(t.category)+' · '+(t.due_date?taskEsc(t.due_date):"Sin fecha")+taskEsc(recurrence)+'</div></div><div class="task-priority">'+(t.priority==="high"?"ALTA":t.priority==="low"?"BAJA":"")+'</div><div class="task-actions">'+(!done?'<button type="button" data-task-edit="'+taskEsc(t.id)+'">Editar</button><button type="button" data-task-subadd="'+taskEsc(t.id)+'">＋ paso</button><button type="button" data-task-postpone="'+taskEsc(t.id)+'">Aplazar</button>':'')+'</div><button type="button" class="task-delete" data-task-delete="'+taskEsc(t.id)+'" aria-label="Eliminar tarea">×</button>';
   if(subs.length){out+='<div class="task-subtasks">';subs.forEach(function(sub,n){out+='<label class="task-subtask'+(sub.done?' done':'')+'"><input type="checkbox" data-task-sub="'+taskEsc(t.id)+'" data-sub-index="'+n+'" '+(sub.done?'checked':'')+'><span>'+taskEsc(sub.title)+'</span></label>';});out+='</div>';}
   out+='</div>';
  });
@@ -617,7 +618,16 @@ $("tasks-list").addEventListener("change",function(e){
  if(subId){var ix=Number(e.target.getAttribute("data-sub-index")),task=taskItems.find(function(t){return t.id===subId;});if(!task)return;var subs=(task.subtasks||[]).map(function(x){return {id:x.id,title:x.title,done:!!x.done};});if(subs[ix])subs[ix].done=e.target.checked;taskUpdate(subId,{subtasks:subs}).catch(function(err){taskMessage("No se pudo actualizar el paso: "+err.message);});}
 });
 $("tasks-list").addEventListener("click",function(e){
- var addId=e.target.getAttribute("data-task-subadd"),postId=e.target.getAttribute("data-task-postpone"),deleteId=e.target.getAttribute("data-task-delete");
+ var editId=e.target.getAttribute("data-task-edit"),addId=e.target.getAttribute("data-task-subadd"),postId=e.target.getAttribute("data-task-postpone"),deleteId=e.target.getAttribute("data-task-delete");
+ if(editId){var t=taskItems.find(function(x){return x.id===editId;});if(!t)return;
+  var title=prompt("Nombre de la tarea:",t.title);if(title===null)return;if(!title.trim()){taskMessage("El nombre no puede estar vacío.");return;}
+  var category=prompt("Categoría (PLANTS, HOUSE, ERRANDS, ADMIN, ARCHIBALD, PERSONAL):",t.category);if(category===null)return;category=category.trim().toUpperCase();
+  if(["PLANTS","HOUSE","ERRANDS","ADMIN","ARCHIBALD","PERSONAL"].indexOf(category)<0){taskMessage("Categoría no válida.");return;}
+  var due=prompt("Fecha (AAAA-MM-DD) o vacío para quitarla:",t.due_date||"");if(due===null)return;if(due&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(due)){taskMessage("Fecha no válida. Usa AAAA-MM-DD.");return;}
+  var priority=prompt("Prioridad (high, normal, low):",t.priority||"normal");if(priority===null)return;priority=priority.trim().toLowerCase();if(["high","normal","low"].indexOf(priority)<0){taskMessage("Prioridad no válida.");return;}
+  var recurrence=prompt("Repetición (daily, weekly, monthly) o vacío:",t.recurrence||"");if(recurrence===null)return;recurrence=recurrence.trim().toLowerCase();if(recurrence&&!["daily","weekly","monthly"].includes(recurrence)){taskMessage("Repetición no válida.");return;}
+  taskRequest(TASKS_API+"/"+encodeURIComponent(editId),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:title.trim(),category:category,due_date:due||null,priority:priority,recurrence:recurrence||null})}).then(taskLoad).catch(function(err){taskMessage("No se pudo editar: "+err.message);});return;
+ }
  if(addId){var title=prompt("¿Qué pequeño paso quieres añadir?");if(!title||!title.trim())return;var t=taskItems.find(function(x){return x.id===addId;});if(!t)return;var subs=(t.subtasks||[]).slice();subs.push({id:String(Date.now()),title:title.trim(),done:false});taskUpdate(addId,{subtasks:subs}).catch(function(err){taskMessage("No se pudo añadir el paso: "+err.message);});return;}
  if(postId){var days=prompt("¿Cuántos días quieres aplazarla? Escribe un número (por ejemplo, 1 o 7).","1");if(days===null)return;var n=parseInt(days,10);if(!Number.isFinite(n)||n<1||n>365){taskMessage("Introduce un número de días entre 1 y 365.");return;}var t=taskItems.find(function(x){return x.id===postId;});var base=t&&t.due_date?new Date(t.due_date+"T12:00:00"):new Date();base.setDate(base.getDate()+n);taskUpdate(postId,{due_date:taskDate(base)}).catch(function(err){taskMessage("No se pudo aplazar: "+err.message);});return;}
  if(deleteId){if(!confirm("¿Eliminar esta tarea definitivamente?"))return;taskRequest(TASKS_API+"/"+encodeURIComponent(deleteId),{method:"DELETE"}).then(taskLoad).catch(function(err){taskMessage("No se pudo eliminar: "+err.message);});}
