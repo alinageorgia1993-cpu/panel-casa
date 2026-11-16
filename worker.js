@@ -130,6 +130,26 @@ export default {
                 .bind(crypto.randomUUID(),current.title,current.category,nextDate,current.priority,current.recurrence,now,now,JSON.stringify([])).run();
             }
           }
+          if (Object.prototype.hasOwnProperty.call(body, "title")) {
+            const title = String(body.title || "").trim().slice(0,160);
+            if (!title) return response(JSON.stringify({ error: "TITLE_REQUIRED" }), 400, "application/json; charset=utf-8");
+            await env.DB.prepare("UPDATE tasks SET title=?, updated_at=? WHERE id=?").bind(title,now,id).run();
+          }
+          if (Object.prototype.hasOwnProperty.call(body, "category")) {
+            const categories = ["PLANTS","HOUSE","ERRANDS","ADMIN","ARCHIBALD","PERSONAL"];
+            if (!categories.includes(body.category)) return response(JSON.stringify({ error: "INVALID_CATEGORY" }), 400, "application/json; charset=utf-8");
+            await env.DB.prepare("UPDATE tasks SET category=?, updated_at=? WHERE id=?").bind(body.category,now,id).run();
+          }
+          if (Object.prototype.hasOwnProperty.call(body, "priority")) {
+            const priorities = ["low","normal","high"];
+            if (!priorities.includes(body.priority)) return response(JSON.stringify({ error: "INVALID_PRIORITY" }), 400, "application/json; charset=utf-8");
+            await env.DB.prepare("UPDATE tasks SET priority=?, updated_at=? WHERE id=?").bind(body.priority,now,id).run();
+          }
+          if (Object.prototype.hasOwnProperty.call(body, "recurrence")) {
+            const recurrences = ["daily","weekly","monthly"];
+            if (body.recurrence !== null && !recurrences.includes(body.recurrence)) return response(JSON.stringify({ error: "INVALID_RECURRENCE" }), 400, "application/json; charset=utf-8");
+            await env.DB.prepare("UPDATE tasks SET recurrence=?, updated_at=? WHERE id=?").bind(body.recurrence || null,now,id).run();
+          }
           if (Object.prototype.hasOwnProperty.call(body, "due_date")) {
             await env.DB.prepare("UPDATE tasks SET due_date=?, updated_at=? WHERE id=?").bind(body.due_date || null,now,id).run();
           }
