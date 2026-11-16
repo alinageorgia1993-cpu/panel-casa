@@ -74,21 +74,22 @@ body.night #night{display:-webkit-flex;display:flex}
 .cal-head a,.bus-link{font-size:13px;color:var(--acc);text-decoration:none}
 .agenda-actions{display:flex;align-items:center;gap:8px}
 .agenda-btn{border:0;border-radius:9px;background:#26364a;color:#dce9f8;padding:8px 11px;font-size:13px;font-weight:600}
-.agenda-status{font-size:12px;color:var(--muted);margin:3px 0 8px}
-.agenda-list{flex:1;min-height:0;overflow:auto;padding-right:3px}
-.agenda-day{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid #303a48}
-.agenda-date{color:var(--muted);text-align:center;text-transform:uppercase;font-size:11px;line-height:1.25}
-.agenda-date strong{display:block;color:var(--text);font-size:30px;font-weight:500;line-height:1.1}
+.agenda-status{font-size:11px;color:#8995a5;margin:1px 0 5px;letter-spacing:.01em}
+.agenda-list{flex:1;min-height:0;overflow:auto;padding:0 3px 0 0}
+.agenda-day{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;padding:6px 0;border-top:1px solid rgba(148,163,184,.13)}
+.agenda-date{color:#9ba7b6;text-align:left;text-transform:uppercase;font-size:9px;line-height:1.15;padding-top:2px;letter-spacing:.06em}
+.agenda-date strong{display:block;color:#e5eaf0;font-size:23px;font-weight:400;line-height:1}
 .agenda-date span{display:block;margin-top:3px}
 .agenda-events{min-width:0}
-.agenda-event{border-left:3px solid var(--event-color,#58a6ff);background:#202a38;border-radius:0 10px 10px 0;padding:8px 10px;margin:0 0 7px}
-.agenda-event summary{list-style:none;cursor:pointer}
+.agenda-event{border:0;border-bottom:1px solid rgba(148,163,184,.10);background:transparent;border-radius:0;padding:4px 0 5px;margin:0}
+.agenda-event:last-child{border-bottom:0}
+.agenda-event summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;gap:8px}
 .agenda-event summary::-webkit-details-marker{display:none}
-.agenda-event-title{font-size:15px;font-weight:600;overflow-wrap:anywhere}
-.agenda-event-meta{font-size:12px;color:var(--muted);margin-top:3px}
-.agenda-event-detail{font-size:12px;color:#c5cfdb;margin-top:7px;white-space:pre-wrap;overflow-wrap:anywhere}
-.agenda-empty{color:var(--muted);font-size:14px;padding:18px 4px}
-@media(max-width:760px){.agenda-day{grid-template-columns:55px minmax(0,1fr);gap:8px}.agenda-date strong{font-size:25px}.agenda-event-title{font-size:13px}.agenda-status{font-size:11px}}
+.agenda-event-title{font-size:13px;font-weight:500;color:#e4e9ef;line-height:1.25;overflow-wrap:anywhere}
+.agenda-event-meta{font-size:10px;color:#98a5b5;margin:0;line-height:1.3}
+.agenda-event-detail{font-size:11px;color:#b9c3cf;margin:5px 0 2px 84px;white-space:pre-wrap;overflow-wrap:anywhere}
+.agenda-empty{color:var(--muted);font-size:12px;padding:12px 2px}
+@media(max-width:760px){.agenda-day{grid-template-columns:39px minmax(0,1fr);gap:7px;padding:5px 0}.agenda-date strong{font-size:20px}.agenda-event summary{grid-template-columns:65px minmax(0,1fr);gap:6px}.agenda-event-title{font-size:12px}.agenda-event-meta{font-size:9px}.agenda-event-detail{margin-left:71px}.agenda-status{font-size:10px}}
 .bus h2{color:var(--text);margin-bottom:10px}
 .bus-group{padding:8px 0 10px;border-top:1px solid #303a48}
 .bus-group:first-of-type{border-top:0}
@@ -287,14 +288,14 @@ function bus(i){
 /* --- agenda Google Calendar: OAuth de solo lectura + agenda agrupada --- */
 var GOOGLE_CLIENT_ID="338582084819-v6mm7auokf0ct40rni42h73nkcha0du2.apps.googleusercontent.com";
 var CALENDARS=[
- {id:"alinageorgia1993@gmail.com",name:"Personal",color:"#58a6ff"},
- {id:"i31jakd1kfame3uctdr6vt4v88@group.calendar.google.com",name:"Global Marketing",color:"#d2a8ff"},
- {id:"es.spain#holiday@group.v.calendar.google.com",name:"Festivos España",color:"#3fb950"}
+ {id:"alinageorgia1993@gmail.com",name:"Personal",color:"#a9c3d8"},
+ {id:"i31jakd1kfame3uctdr6vt4v88@group.calendar.google.com",name:"Global Marketing",color:"#c5b1d8"},
+ {id:"es.spain#holiday@group.v.calendar.google.com",name:"Festivos España",color:"#aec7b4"}
 ];
 var agendaToken=null,agendaTokenExpiry=0,agendaTimer=null;
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];});}
 function agendaShell(){
- $("cal").innerHTML='<div class="cal-head"><h2>📅 MI AGENDA</h2><div class="agenda-actions"><button class="agenda-btn" id="agenda-login">Conectar Google</button></div></div><div class="agenda-status" id="agenda-status">Conecta tu cuenta para consultar tus próximos eventos.</div><div class="agenda-list" id="agenda-list"><div class="agenda-empty">Tu agenda aparecerá aquí después de iniciar sesión.</div></div>';
+ $("cal").innerHTML='<div class="cal-head"><div><h2>MI AGENDA</h2><div style="font-size:11px;color:#8995a5;margin-top:2px">Próximos eventos</div></div><div class="agenda-actions"><button class="agenda-btn" id="agenda-login">Conectar</button></div></div><div class="agenda-status" id="agenda-status">Conecta tu cuenta para consultar tus próximos eventos.</div><div class="agenda-list" id="agenda-list"><div class="agenda-empty">Tu agenda aparecerá aquí después de iniciar sesión.</div></div>';
  $("agenda-login").addEventListener("click",function(){connectCalendar();});
 }
 function agendaMessage(msg){var el=$("agenda-status");if(el)el.textContent=msg;}
@@ -350,12 +351,12 @@ function renderAgenda(events){
  if(!keys.length){$("agenda-list").innerHTML='<div class="agenda-empty">No hay eventos próximos en los calendarios seleccionados.</div>';return;}
  keys.forEach(function(key){
   var parts=key.split("-"),date=new Date(+parts[0],+parts[1]-1,+parts[2]);
-  html+='<section class="agenda-day"><div class="agenda-date"><strong>'+date.getDate()+'</strong><span>'+esc(MESES[date.getMonth()].slice(0,3))+'</span><span>'+esc(DIAS[date.getDay()])+'</span></div><div class="agenda-events">';
+  html+='<section class="agenda-day"><div class="agenda-date"><strong>'+date.getDate()+'</strong><span>'+esc(DIAS[date.getDay()].slice(0,3))+'</span><span>'+esc(MESES[date.getMonth()].slice(0,3))+'</span></div><div class="agenda-events">';
   groups[key].forEach(function(ev){
    var cal=ev._calendar,detail=[];
    if(ev.location)detail.push("📍 "+ev.location);
    if(ev.description)detail.push(ev.description);
-   html+='<details class="agenda-event" style="--event-color:'+cal.color+'"><summary><div class="agenda-event-title">'+esc(ev.summary||"(Sin título)")+'</div><div class="agenda-event-meta">'+esc(eventTime(ev))+' · '+esc(cal.name)+'</div></summary>'+(detail.length?'<div class="agenda-event-detail">'+esc(detail.join("\n\n"))+'</div>':'')+'</details>';
+   html+='<details class="agenda-event" style="--event-color:'+cal.color+'"><summary><div class="agenda-event-meta">'+esc(eventTime(ev))+'</div><div class="agenda-event-title"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+cal.color+';margin:0 6px 1px 0"></span>'+esc(ev.summary||"(Sin título)")+' <span style="font-size:10px;color:#8491a1;font-weight:400">· '+esc(cal.name)+'</span></div></summary>'+(detail.length?'<div class="agenda-event-detail">'+esc(detail.join("\n\n"))+'</div>':'')+'</details>';
   });
   html+='</div></section>';
  });
