@@ -118,6 +118,72 @@ body.night #night{display:-webkit-flex;display:flex}
  .bus-route-title{font-size:11px}
 }
 
+
+/* Panel Casa · visual refresh 2026-11-16 */
+:root{--bg:#101419;--card:#191f26;--text:#edf0ed;--muted:#9ba59f;--acc:#a9c2b2;--ok:#9dbca6;--warn:#d9b78e}
+html,body{background:radial-gradient(ellipse at 18% 0%,#202a2b 0%,#101419 48%,#0c1014 100%);color:var(--text)}
+.screen{padding:16px 16px 0;gap:12px}
+.card{background:linear-gradient(145deg,rgba(31,39,44,.97),rgba(23,29,35,.97));border:1px solid rgba(190,205,195,.10);border-radius:17px;box-shadow:0 8px 24px rgba(0,0,0,.16);padding:15px 17px;margin:0;min-width:0}
+.top{height:23%;min-height:150px;gap:12px}
+.clockbox{flex:1.1;display:flex;flex-direction:column;justify-content:center}
+#time{font-size:clamp(64px,8vw,108px);font-weight:200;letter-spacing:-.065em;color:#f2f3ef}
+#date{font-size:clamp(16px,1.7vw,23px);color:#aab5ae;letter-spacing:.01em}
+#tarif{font-size:13px;margin-top:12px;padding:6px 11px;border-radius:20px}
+.dal{background:rgba(112,151,122,.18);color:#b6d1bc}.nor{background:rgba(189,151,108,.17);color:#e0c09b}
+.side{flex:.9;display:flex;flex-direction:column;justify-content:center}
+h2{font-size:15px;letter-spacing:.015em;color:#c5cec8;font-weight:550}
+#temp{font-size:clamp(30px,4vw,46px);font-weight:250}
+#rtxt{font-size:14px;color:#c1cbc4}
+#rbars i{background:#9fb9b0}
+.mid{flex:1;min-height:0;gap:12px}
+.bus{flex:.86;min-width:280px;overflow:auto}
+.cal{flex:1.9;min-width:0;display:flex;flex-direction:column;overflow:hidden;padding:16px 19px}
+.cal-head h2{font-size:16px;letter-spacing:.10em}
+.agenda-status{font-size:10px;color:#89968e}
+.agenda-day{grid-template-columns:48px minmax(0,1fr);padding:8px 0;border-top:1px solid rgba(190,205,195,.11)}
+.agenda-date{color:#9ca9a1}
+.agenda-date strong{color:#e8ede8;font-size:25px;font-weight:300}
+.agenda-event{border-bottom:1px solid rgba(190,205,195,.08);padding:5px 0}
+.agenda-event-title{color:#e6ebe6;font-size:13px;font-weight:500}
+.agenda-event-meta{color:#aab5ad;font-variant-numeric:tabular-nums}
+.agenda-btn{background:#34443d;color:#e2eee5;border:1px solid rgba(169,194,178,.18)}
+.bus h2{font-size:16px;margin-bottom:12px;color:#e4ebe5}
+.bus-group{padding:12px 0;border-top:1px solid rgba(190,205,195,.12)}
+.bus-route-title{font-size:12px;color:#c5d0c8;letter-spacing:.01em;margin-bottom:8px}
+.bus-state{font-size:12px;line-height:1.5;color:#aab5ad;padding:5px 0 9px}
+.bus-link{display:inline-flex;align-items:center;gap:6px;color:#b5cbbd;font-size:12px;border:1px solid rgba(169,194,178,.2);background:rgba(169,194,178,.07);padding:7px 10px;border-radius:9px}
+.bus-link:hover{background:rgba(169,194,178,.13)}
+.bus-meta{font-size:10px;color:#849188}
+#papier{font-size:16px;padding:11px 15px;border-radius:13px}
+#papier>div:first-child{font-size:15px!important}
+#papier>div:nth-child(2){font-size:14px!important}
+#tabs{height:56px;background:rgba(10,14,17,.96);border-top:1px solid rgba(190,205,195,.08)}
+#tabs button{font-size:17px;color:#8e9b92}
+#tabs button.on{color:#c0d4c6}
+.shop,.tm{border:1px solid rgba(190,205,195,.10)}
+@media(max-width:760px){
+ .screen{padding:8px 8px 0;gap:8px}
+ .top{height:27%;min-height:138px;gap:8px}
+ .card{padding:10px 11px;border-radius:13px}
+ .mid{gap:8px}
+ .bus{flex:.88;min-width:0}
+ .cal{flex:1.7;padding:11px}
+ #time{font-size:clamp(52px,11vw,78px)}
+ #date{font-size:15px}
+ #temp{font-size:30px}
+ #rtxt{font-size:12px}
+ .bus h2{font-size:13px}
+ .bus-route-title{font-size:10px}
+ .bus-state{font-size:10px}
+ .bus-link{font-size:10px;padding:6px 7px}
+ .agenda-day{grid-template-columns:37px minmax(0,1fr);gap:7px;padding:5px 0}
+ .agenda-date strong{font-size:20px}
+ .agenda-event summary{grid-template-columns:62px minmax(0,1fr);gap:5px}
+ .agenda-event-title{font-size:11px}
+ .agenda-event-meta{font-size:9px}
+ #papier{font-size:13px}
+}
+
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -221,69 +287,18 @@ function rain(){
   },function(){$("rtxt").textContent="No se pudo cargar el tiempo";});
 }
 
-/* --- autobuses: salidas reales desde DRGL --- */
-var DRGL=[
- {title:"Churchilllaan → WoensXL",url:"https://www.drgl.nl/stop/NL:S:64051510",lines:["323","404"],destination:"Eindhoven Station",route:"Churchilllaan → WoensXL"},
- {title:"WoensXL → Aeropuerto",url:"https://www.drgl.nl/stop/NL:S:64052010",lines:["400"],destination:"Airport",route:"WoensXL → Aeropuerto"}
+/* --- Autobuses: Hermes oficial como fuente de consulta en directo --- */
+var HERMES=[
+ {title:"Churchilllaan → WoensXL",subtitle:"Líneas 323 y 404 · dirección Eindhoven Station",url:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22:%22NL:S:64051510%22,%22town%22:%22Eindhoven%22,%22name%22:%22Churchilllaan%22%7D"},
+ {title:"WoensXL → Aeropuerto",subtitle:"Línea 400 · dirección Airport",url:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22:%22NL:S:64052010%22,%22town%22:%22Eindhoven%22,%22name%22:%22WoensXL%2FZH%20Catharina%22%7D"}
 ];
-function fetchStopText(url){
- var proxies=[
-  "https://api.allorigins.win/raw?url="+encodeURIComponent(url),
-  "https://r.jina.ai/http://"+url.replace(/^https?:\/\//,"")
- ];
- function attempt(n){
-  return fetch(proxies[n],{cache:"no-store"}).then(function(r){
-   if(!r.ok)throw new Error("HTTP "+r.status);
-   return r.text();
-  }).catch(function(e){
-   if(n+1<proxies.length)return attempt(n+1);
-   throw e;
-  });
- }
- return attempt(0);
-}
-function parseDrglDepartures(raw,stop){
- var doc=new DOMParser().parseFromString(raw,"text/html");
- var txt=(doc.body?doc.body.textContent:raw).replace(/\s+/g," ");
- var re=/(\d{1,2}:\d{2})(?:\s+(?:VERTROKKEN|[+-]\d+|Perron\s+[A-Z]))*\s+(323|404|400)\s+(.{1,70}?)\s+Bus/gi;
- var out=[],m,now=new Date(),nowMin=now.getHours()*60+now.getMinutes(),seen={};
- while((m=re.exec(txt))!==null){
-  var line=m[2],dest=m[3].replace(/\s+/g," ").trim(),p=m[1].split(":"),clock=(+p[0])*60+(+p[1]);
-  var delta=(clock-nowMin+1440)%1440;
-  if(delta>720)delta-=1440;
-  if(delta<0||delta>180)continue;
-  if(stop.lines.indexOf(line)<0)continue;
-  if(stop.destination==="Airport" ? !/airport/i.test(dest) : !/eindhoven station/i.test(dest))continue;
-  var key=line+"|"+m[1]+"|"+dest;
-  if(seen[key])continue;seen[key]=true;
-  out.push({line:line,destination:dest,minutes:delta,time:m[1]});
- }
- out.sort(function(a,b){return a.minutes-b.minutes;});
- return out;
-}
-function renderBusGroup(i,list,checkedAt){
- var stop=DRGL[i],box=$("bus"+i),h='<div class="bus-group"><div class="bus-route-title">'+stop.title+'</div>';
- if(!list.length){
-  h+='<div class="bus-state">No se han encontrado salidas próximas verificables.</div>';
- }else{
-  list.slice(0,2).forEach(function(d){
-   h+='<div class="departure"><div class="dep-line">'+d.line+'</div><div><div class="dep-destination">'+d.destination+'</div><div class="dep-route">'+stop.route+'</div></div><div class="dep-min">'+(d.minutes===0?"Ahora":d.minutes+" min")+'</div></div>';
-  });
- }
- h+='<div><a class="bus-link" href="'+stop.url+'" target="_blank" rel="noopener">Ver salidas en directo ↗</a></div></div>';
- box.innerHTML=h;
- $("busup").textContent="Datos DRGL · actualizado "+checkedAt;
-}
-function bus(i){
- var stop=DRGL[i],box=$("bus"+i);
- if(!box)return;
- box.innerHTML='<div class="bus-group"><div class="bus-route-title">'+stop.title+'</div><div class="bus-state">Consultando salidas reales…</div></div>';
- fetchStopText(stop.url).then(function(raw){
-  var list=parseDrglDepartures(raw,stop),now=new Date();
-  renderBusGroup(i,list,dos(now.getHours())+":"+dos(now.getMinutes()));
- }).catch(function(){
-  box.innerHTML='<div class="bus-group"><div class="bus-route-title">'+stop.title+'</div><div class="bus-state">No se ha podido consultar el servicio en este momento.</div><a class="bus-link" href="'+stop.url+'" target="_blank" rel="noopener">Consultar horarios en DRGL ↗</a></div>';
+function renderHermesLinks(){
+ HERMES.forEach(function(stop,i){
+  var box=$("bus"+i);
+  if(!box)return;
+  box.innerHTML='<div class="bus-group"><div class="bus-route-title">'+stop.title+'</div><div class="bus-state">'+stop.subtitle+'</div><a class="bus-link" href="'+stop.url+'" target="_blank" rel="noopener">Ver salidas actuales en Hermes ↗</a></div>';
  });
+ $("busup").textContent="Fuente oficial: Hermes · sus salidas se actualizan aproximadamente cada 25 segundos";
 }
 /* --- agenda Google Calendar: OAuth de solo lectura + agenda agrupada --- */
 var GOOGLE_CLIENT_ID="338582084819-v6mm7auokf0ct40rni42h73nkcha0du2.apps.googleusercontent.com";
@@ -416,7 +431,7 @@ for(q=0;q<tabs.length;q++){tabs[q].addEventListener("click",function(){
 
 tick();setInterval(tick,5000);
 rain();setInterval(rain,300000);
-bus(0);bus(1);setInterval(function(){bus(0);bus(1);},30000);
+renderHermesLinks();
 setInterval(function(){location.reload();},6*3600*1000);
 })();
 </script>
