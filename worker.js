@@ -25,7 +25,9 @@ export default {
       try {
         const stopData = key === "churchilllaan"
           ? { stopid: "NL:S:64051510", town: "Eindhoven", name: "Churchilllaan" }
-          : { stopid: "NL:S:64052010", town: "Eindhoven", name: "WoensXL/ZH Catharina" };
+          : key === "woensxl"
+            ? { stopid: "NL:S:64052010", town: "Eindhoven", name: "WoensXL/ZH Catharina" }
+            : { stopid: "NL:S:64100160", town: "Eindhoven", name: "BIC" };
         const apiUrl = new URL("https://www.hermes.nl/api/travelplanner/stops/departures");
         apiUrl.searchParams.set("stop", JSON.stringify(stopData));
         const upstream = await fetch(apiUrl.toString(), {
