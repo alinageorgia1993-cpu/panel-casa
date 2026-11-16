@@ -60,6 +60,46 @@ body.night #night{display:-webkit-flex;display:flex}
 #ntime{font-size:110px;font-weight:200;color:#3a3a3a}
 #alarm{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#b3261e;z-index:30;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;font-size:64px;text-align:center}
 #alarm.on{display:-webkit-flex;display:flex}
+/* Dashboard refresh: compact cards, clear departure hierarchy and agenda */
+.screen{gap:0}
+.top{height:31%;min-height:190px}
+.mid{flex:1;min-height:0;gap:0}
+.clockbox{flex:1.15}
+.side{flex:.85}
+.bus{flex:1.08;overflow:auto}
+.cal{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;padding:14px 16px}
+.cal iframe{flex:1;min-height:0;width:100%;height:auto;border:0;border-radius:12px;background:#fff}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
+.cal-head h2{margin:0;color:var(--text);font-size:19px}
+.cal-head a,.bus-link{font-size:13px;color:var(--acc);text-decoration:none}
+.bus h2{color:var(--text);margin-bottom:10px}
+.bus-group{padding:8px 0 10px;border-top:1px solid #303a48}
+.bus-group:first-of-type{border-top:0}
+.bus-route-title{font-size:13px;color:var(--muted);margin-bottom:7px}
+.departure{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:9px;padding:7px 0}
+.dep-line{font-size:18px;font-weight:700;text-align:center;background:var(--acc);color:#0d1117;border-radius:9px;padding:5px 3px}
+.dep-destination{font-size:16px;font-weight:600;line-height:1.15}
+.dep-route{font-size:12px;color:var(--muted);margin-top:3px}
+.dep-min{font-size:22px;font-weight:700;white-space:nowrap}
+.bus-state{font-size:13px;color:var(--muted);padding:6px 0}
+.bus-meta{font-size:11px;color:var(--muted);margin-top:6px}
+@media(max-width:760px){
+ .screen{padding:8px 8px 0}
+ .top{height:34%;min-height:150px}
+ #time{font-size:clamp(54px,12vw,82px)}
+ #date{font-size:17px}
+ .card{padding:10px 11px;margin:0 4px 8px}
+ h2{font-size:15px}
+ .mid{gap:0}
+ .bus{flex:1.05}
+ .cal{flex:.95;padding:10px}
+ .dep-min{font-size:17px}
+ .dep-destination{font-size:13px}
+ .dep-line{font-size:15px}
+ .departure{grid-template-columns:40px minmax(0,1fr) auto;gap:6px;padding:5px 0}
+ .bus-route-title{font-size:11px}
+}
+
 </style>
 </head>
 <body>
@@ -94,7 +134,7 @@ body.night #night{display:-webkit-flex;display:flex}
 /* ===== CONFIGURACIÓN: cambia solo esto ===== */
 var CFG={
   lat:51.44, lon:5.50,                 /* Eindhoven */
-  calUrl:"https://calendar.google.com/calendar/embed?src=alinageorgia1993%40gmail.com&ctz=Europe%2FAmsterdam",
+  calUrl:"https://calendar.google.com/calendar/embed?src=alinageorgia1993%40gmail.com&ctz=Europe%2FAmsterdam&mode=AGENDA&showTitle=0&showNav=0&showTabs=0&showPrint=0&showCalendars=0&showTz=0",
   papierDates:["2026-11-17","2026-12-01","2026-12-15","2026-12-29"],
   nightFrom:23, nightTo:6              /* modo noche */
 };
@@ -162,86 +202,75 @@ function rain(){
   },function(){$("rtxt").textContent="No se pudo cargar el tiempo";});
 }
 
-/* --- autobuses: próximas dos salidas por parada --- */
-function minsTo(t){
-  if(!t)return null;
-  var v=String(t),d=new Date(v);
-  if(!isNaN(d.getTime()))return Math.round((d.getTime()-Date.now())/60000);
-  var m=/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(v);
-  if(!m)return null;
-  return Math.round((new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5])-new Date())/60000);
+/* --- autobuses: salidas reales desde DRGL --- */
+var DRGL=[
+ {title:"Churchilllaan → WoensXL",url:"https://www.drgl.nl/stop/NL:S:64051510",lines:["323","404"],destination:"Eindhoven Station",route:"Churchilllaan → WoensXL"},
+ {title:"WoensXL → Aeropuerto",url:"https://www.drgl.nl/stop/NL:S:64052010",lines:["400"],destination:"Airport",route:"WoensXL → Aeropuerto"}
+];
+function fetchStopText(url){
+ var proxies=[
+  "https://api.allorigins.win/raw?url="+encodeURIComponent(url),
+  "https://r.jina.ai/http://"+url.replace(/^https?:\\/\\//,"")
+ ];
+ function attempt(n){
+  return fetch(proxies[n],{cache:"no-store"}).then(function(r){
+   if(!r.ok)throw new Error("HTTP "+r.status);
+   return r.text();
+  }).catch(function(e){
+   if(n+1<proxies.length)return attempt(n+1);
+   throw e;
+  });
+ }
+ return attempt(0);
 }
-function getBusJSON(url,ok,bad){
-  var encoded=encodeURIComponent(url);
-  var sources=[
-    "https://api.allorigins.win/raw?url="+encoded,
-    "https://corsproxy.io/?url="+encoded
-  ];
-  function attempt(n){
-    fetch(sources[n]).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
-    .then(ok).catch(function(e){if(n+1<sources.length)attempt(n+1);else bad(e);});
-  }
-  attempt(0);
+function parseDrglDepartures(raw,stop){
+ var doc=new DOMParser().parseFromString(raw,"text/html");
+ var txt=(doc.body?doc.body.textContent:raw).replace(/\\s+/g," ");
+ var re=/(\\d{1,2}:\\d{2})(?:\\s+(?:VERTROKKEN|[+-]\\d+|Perron\\s+[A-Z]))*\\s+(323|404|400)\\s+(.{1,70}?)\\s+Bus/gi;
+ var out=[],m,now=new Date(),nowMin=now.getHours()*60+now.getMinutes(),seen={};
+ while((m=re.exec(txt))!==null){
+  var line=m[2],dest=m[3].replace(/\\s+/g," ").trim(),p=m[1].split(":"),clock=(+p[0])*60+(+p[1]);
+  var delta=(clock-nowMin+1440)%1440;
+  if(delta>720)delta-=1440;
+  if(delta<0||delta>180)continue;
+  if(stop.lines.indexOf(line)<0)continue;
+  if(stop.destination==="Airport" ? !/airport/i.test(dest) : !/eindhoven station/i.test(dest))continue;
+  var key=line+"|"+m[1]+"|"+dest;
+  if(seen[key])continue;seen[key]=true;
+  out.push({line:line,destination:dest,minutes:delta,time:m[1]});
+ }
+ out.sort(function(a,b){return a.minutes-b.minutes;});
+ return out;
 }
-function collectPasses(o,out,s,depth){
-  if(!o||typeof o!=="object"||depth>10)return;
-  var k,ps,id,x,ln,dest,time,m;
-  if(o.Passes&&typeof o.Passes==="object"){
-    ps=o.Passes;
-    for(id in ps){
-      if(!ps.hasOwnProperty(id))continue;
-      x=ps[id]||{};
-      ln=String(x.LinePublicNumber||x.LinePlanningNumber||x.LineName||"").trim();
-      if(s.lines.indexOf(ln)<0)continue;
-      dest=String(x.DestinationName50||x.DestinationName||x.Destination||"").trim();
-      if(s.dest&&dest.toLowerCase().indexOf(s.dest.toLowerCase())<0)continue;
-      if(String(x.TripStopStatus||"").toUpperCase()==="CANCEL")continue;
-      time=x.ExpectedDepartureTime||x.TargetDepartureTime||x.ExpectedArrivalTime||x.TargetArrivalTime;
-      m=minsTo(time);
-      if(m===null||m<0)continue;
-      out.push({line:ln,dest:dest,minutes:m,time:time});
-    }
-    return;
-  }
-  for(k in o)if(o.hasOwnProperty(k))collectPasses(o[k],out,s,depth+1);
-}
-function fmtMinutes(m){
-  if(m<=0)return "ahora";
-  if(m===1)return "en 1 minuto";
-  if(m<60)return "en "+m+" minutos";
-  var h=Math.floor(m/60),r=m%60;
-  return "en "+h+" h"+(r?" "+r+" min":"");
+function renderBusGroup(i,list,checkedAt){
+ var stop=DRGL[i],box=$("bus"+i),h='<div class="bus-group"><div class="bus-route-title">'+stop.title+'</div>';
+ if(!list.length){
+  h+='<div class="bus-state">No se han encontrado salidas próximas verificables.</div>';
+ }else{
+  list.slice(0,2).forEach(function(d){
+   h+='<div class="departure"><div class="dep-line">'+d.line+'</div><div><div class="dep-destination">'+d.destination+'</div><div class="dep-route">'+stop.route+'</div></div><div class="dep-min">'+(d.minutes===0?"Ahora":d.minutes+" min")+'</div></div>';
+  });
+ }
+ h+='<div><a class="bus-link" href="'+stop.url+'" target="_blank" rel="noopener">Ver salidas en directo ↗</a></div></div>';
+ box.innerHTML=h;
+ $("busup").textContent="Datos DRGL · actualizado "+checkedAt;
 }
 function bus(i){
-  var s=STOPS[i],box=$("bus"+i);
-  box.innerHTML='<div class="bt">'+s.title+'</div><div class="small">Consultando próximas salidas…</div>';
-  function fail(){
-    box.innerHTML='<div class="bt">'+s.title+'</div><div class="small">No se ha podido conectar con el servicio de horarios.</div><div class="small"><a href="'+s.url+'" target="_blank" rel="noopener">Consultar salidas en directo en DRGL ↗</a></div>';
-  }
-  getBusJSON(s.api,function(data){
-    var list=[];collectPasses(data,list,s,0);list.sort(function(a,b){return a.minutes-b.minutes;});
-    var h='<div class="bt">'+s.title+'</div>',k,item,clock;
-    if(!list.length){
-      h+='<div class="small">No hay salidas próximas disponibles para las líneas '+s.lines.join(" y ")+'.</div>';
-    }else{
-      for(k=0;k<Math.min(2,list.length);k++){
-        item=list[k];clock="";
-        if(item.time){var d=new Date(item.time);if(!isNaN(d.getTime()))clock=" · "+dos(d.getHours())+":"+dos(d.getMinutes());}
-        h+='<div style="padding:7px 0;border-bottom:1px solid #303a48">'+
-          '<div style="display:flex;align-items:center;gap:9px"><b style="font-size:23px;background:var(--acc);color:#0d1117;border-radius:8px;padding:2px 9px">'+item.line+'</b>'+
-          '<strong style="font-size:21px">'+(k===0?'Próximo bus':'Siguiente bus')+'</strong></div>'+
-          '<div style="font-size:23px;font-weight:600;margin-top:4px">'+fmtMinutes(item.minutes)+clock+'</div>'+
-          '<div class="small">Dirección: '+(item.dest||s.dest)+'</div></div>';
-      }
-    }
-    h+='<div class="small" style="margin-top:7px"><a href="'+s.url+'" target="_blank" rel="noopener">Ver todas las salidas ↗</a></div>';
-    box.innerHTML=h;
-    var now=new Date();$("busup").textContent="Horarios consultados a las "+dos(now.getHours())+":"+dos(now.getMinutes());
-  },fail);
+ var stop=DRGL[i],box=$("bus"+i);
+ if(!box)return;
+ box.innerHTML='<div class="bus-group"><div class="bus-route-title">'+stop.title+'</div><div class="bus-state">Consultando salidas reales…</div></div>';
+ fetchStopText(stop.url).then(function(raw){
+  var list=parseDrglDepartures(raw,stop),now=new Date();
+  renderBusGroup(i,list,dos(now.getHours())+":"+dos(now.getMinutes()));
+ }).catch(function(){
+  box.innerHTML='<div class="bus-group"><div class="bus-route-title">'+stop.title+'</div><div class="bus-state">No se ha podido consultar el servicio en este momento.</div><a class="bus-link" href="'+stop.url+'" target="_blank" rel="noopener">Consultar horarios en DRGL ↗</a></div>';
+ });
 }
-/* --- calendario --- */
-$("cal").innerHTML=CFG.calUrl?'<iframe title="Google Calendar" src="'+CFG.calUrl+'"></iframe><p style="padding:6px 12px;margin:0"><a href="https://calendar.google.com/calendar/u/0?cid=YWxpbmFnZW9yZ2lhMTk5M0BnbWFpbC5jb20" target="_blank" rel="noopener">Abrir Google Calendar ↗</a></p>':'<p>📅 No se ha configurado Google Calendar.</p>';
-
+/* --- agenda Google Calendar en vista de lista --- */
+$("cal").innerHTML=CFG.calUrl?
+ '<div class="cal-head"><h2>📅 MI AGENDA</h2><a href="https://calendar.google.com/calendar/u/0?cid=YWxpbmFnZW9yZ2lhMTk5M0BnbWFpbC5jb20" target="_blank" rel="noopener">Abrir agenda ↗</a></div>'+
+ '<iframe title="Mi agenda · próximos eventos" src="'+CFG.calUrl+'"></iframe>':
+ '<div class="cal-head"><h2>📅 MI AGENDA</h2></div><div class="bus-state">No se ha configurado Google Calendar.</div>';
 /* --- lista de la compra --- */
 var sel={};try{sel=JSON.parse(ls("lista")||"{}");}catch(e){}
 function drawItems(){
