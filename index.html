@@ -20,7 +20,7 @@ h2{margin:0 0 8px;font-size:19px;font-weight:600;color:var(--muted)}
 .top{-webkit-flex:0 0 auto;flex:0 0 auto}
 .clockbox{-webkit-flex:1.2;flex:1.2}
 #time{font-size:104px;font-weight:200;line-height:1;letter-spacing:-2px}
-#date{font-size:25px;color:var(--muted);margin-top:4px;text-transform:capitalize}
+#date{font-size:25px;color:var(--muted);margin-top:4px}#date::first-letter{text-transform:uppercase}
 #tarif{display:inline-block;margin-top:10px;padding:5px 14px;border-radius:14px;font-size:18px;font-weight:600}
 .dal{background:#173d22;color:var(--ok)}.nor{background:#4a2c12;color:var(--warn)}
 .side{-webkit-flex:1;flex:1}
@@ -47,7 +47,7 @@ h2{margin:0 0 8px;font-size:19px;font-weight:600;color:var(--muted)}
 .shop{-webkit-flex:1.6;flex:1.6;overflow:hidden}
 .items{display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap}
 .it{width:16.66%;padding:4px}
-.it div{background:#222c3a;border-radius:14px;height:86px;text-align:center;padding-top:8px;font-size:17px}
+.it div{background:#222c3a;border-radius:14px;height:86px;text-align:center;padding-top:8px;font-size:15px;overflow:hidden}
 .it div span{display:block;font-size:34px;line-height:1.1}
 .it.sel div{background:var(--acc);color:#0d1117;font-weight:600}
 .tm{-webkit-flex:1;flex:1;text-align:center}
@@ -111,7 +111,8 @@ function dos(n){return n<10?"0"+n:""+n;}
 var DIAS=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 var MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){}return null;}
-function getJSON(u,ok,bad){fetch(u).then(function(r){if(!r.ok)throw new Error("http");return r.json();}).then(ok).catch(bad);}
+function fj(u){return fetch(u).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();});}
+function getJSON(u,ok,bad,px){var p=fj(u);if(px){p=p.catch(function(){return fj("https://api.allorigins.win/raw?url="+encodeURIComponent(u));});}p.then(ok,bad);}
 
 /* --- reloj, tarifa, modo noche --- */
 var wake=0;
@@ -171,13 +172,13 @@ function areas(s,ok,bad){
     var out=[],n=s.name.toLowerCase(),t=s.town.toLowerCase(),k,o,nm,tw,code;
     for(k in all){o=all[k];if(!o)continue;nm=(o.TimingPointName||"").toLowerCase();tw=(o.TimingPointTown||"").toLowerCase();
       if(nm.indexOf(n)>-1&&(nm.indexOf(t)>-1||tw.indexOf(t)>-1)){code=o.StopAreaCode||k;if(out.indexOf(code)<0)out.push(code);}}
-    if(!out.length){bad();return;}
+    if(!out.length){bad("No encuentro la parada \""+s.name+"\" en OVapi");return;}
     ls(key,JSON.stringify(out));ok(out);
-  },bad);
+  },function(e){bad("No se pudo leer la lista de paradas ("+(e&&e.message?e.message:e)+")");},true);
 }
 function bus(i){
   var s=STOPS[i],box=$("bus"+i);
-  function fail(){box.innerHTML='<div class="bt">'+s.title+'</div><div class="small">No se pudieron cargar los horarios.</div>';}
+  function fail(e){box.innerHTML='<div class="bt">'+s.title+'</div><div class="small">'+(typeof e==="string"?e:"No se pudieron cargar los horarios ("+(e&&e.message?e.message:"error")+")")+'</div>';}
   areas(s,function(a){
     getJSON("https://v0.ovapi.nl/stopareacode/"+a.join(","),function(data){
       var list=[],ar,tp,ps,id,x,m,ln;
@@ -196,7 +197,7 @@ function bus(i){
         h+='<div class="bl"><b>'+list[k].l+'</b><span>'+list[k].d+'</span><em>'+(list[k].m<=0?"ya":(list[k].m<60?list[k].m+" min":list[k].t))+'</em></div>';}
       box.innerHTML=h;
       var d=new Date();$("busup").textContent="Actualizado a las "+dos(d.getHours())+":"+dos(d.getMinutes());
-    },fail);
+    },fail,true);
   },fail);
 }
 
