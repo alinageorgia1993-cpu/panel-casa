@@ -72,6 +72,23 @@ body.night #night{display:-webkit-flex;display:flex}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
 .cal-head h2{margin:0;color:var(--text);font-size:19px}
 .cal-head a,.bus-link{font-size:13px;color:var(--acc);text-decoration:none}
+.agenda-actions{display:flex;align-items:center;gap:8px}
+.agenda-btn{border:0;border-radius:9px;background:#26364a;color:#dce9f8;padding:8px 11px;font-size:13px;font-weight:600}
+.agenda-status{font-size:12px;color:var(--muted);margin:3px 0 8px}
+.agenda-list{flex:1;min-height:0;overflow:auto;padding-right:3px}
+.agenda-day{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid #303a48}
+.agenda-date{color:var(--muted);text-align:center;text-transform:uppercase;font-size:11px;line-height:1.25}
+.agenda-date strong{display:block;color:var(--text);font-size:30px;font-weight:500;line-height:1.1}
+.agenda-date span{display:block;margin-top:3px}
+.agenda-events{min-width:0}
+.agenda-event{border-left:3px solid var(--event-color,#58a6ff);background:#202a38;border-radius:0 10px 10px 0;padding:8px 10px;margin:0 0 7px}
+.agenda-event summary{list-style:none;cursor:pointer}
+.agenda-event summary::-webkit-details-marker{display:none}
+.agenda-event-title{font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.agenda-event-meta{font-size:12px;color:var(--muted);margin-top:3px}
+.agenda-event-detail{font-size:12px;color:#c5cfdb;margin-top:7px;white-space:pre-wrap;overflow-wrap:anywhere}
+.agenda-empty{color:var(--muted);font-size:14px;padding:18px 4px}
+@media(max-width:760px){.agenda-day{grid-template-columns:55px minmax(0,1fr);gap:8px}.agenda-date strong{font-size:25px}.agenda-event-title{font-size:13px}.agenda-status{font-size:11px}}
 .bus h2{color:var(--text);margin-bottom:10px}
 .bus-group{padding:8px 0 10px;border-top:1px solid #303a48}
 .bus-group:first-of-type{border-top:0}
@@ -101,6 +118,7 @@ body.night #night{display:-webkit-flex;display:flex}
 }
 
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div id="night"><div id="ntime"></div></div>
@@ -266,11 +284,98 @@ function bus(i){
   box.innerHTML='<div class="bus-group"><div class="bus-route-title">'+stop.title+'</div><div class="bus-state">No se ha podido consultar el servicio en este momento.</div><a class="bus-link" href="'+stop.url+'" target="_blank" rel="noopener">Consultar horarios en DRGL ↗</a></div>';
  });
 }
-/* --- agenda Google Calendar en vista de lista --- */
-$("cal").innerHTML=CFG.calUrl?
- '<div class="cal-head"><h2>📅 MI AGENDA</h2><a href="https://calendar.google.com/calendar/u/0?cid=YWxpbmFnZW9yZ2lhMTk5M0BnbWFpbC5jb20" target="_blank" rel="noopener">Abrir agenda ↗</a></div>'+
- '<iframe title="Mi agenda · próximos eventos" src="'+CFG.calUrl+'"></iframe>':
- '<div class="cal-head"><h2>📅 MI AGENDA</h2></div><div class="bus-state">No se ha configurado Google Calendar.</div>';
+/* --- agenda Google Calendar: OAuth de solo lectura + agenda agrupada --- */
+var GOOGLE_CLIENT_ID="338582084819-v6mm7auokf0ct40rni42h73nkcha0du2.apps.googleusercontent.com";
+var CALENDARS=[
+ {id:"alinageorgia1993@gmail.com",name:"Personal",color:"#58a6ff"},
+ {id:"i31jakd1kfame3uctdr6vt4v88@group.calendar.google.com",name:"Global Marketing",color:"#d2a8ff"},
+ {id:"es.spain#holiday@group.v.calendar.google.com",name:"Festivos España",color:"#3fb950"}
+];
+var agendaToken=null,agendaTokenExpiry=0,agendaTimer=null;
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];});}
+function agendaShell(){
+ $("cal").innerHTML='<div class="cal-head"><h2>📅 MI AGENDA</h2><div class="agenda-actions"><button class="agenda-btn" id="agenda-login">Conectar Google</button></div></div><div class="agenda-status" id="agenda-status">Conecta tu cuenta para consultar tus próximos eventos.</div><div class="agenda-list" id="agenda-list"><div class="agenda-empty">Tu agenda aparecerá aquí después de iniciar sesión.</div></div>';
+ $("agenda-login").addEventListener("click",function(){connectCalendar();});
+}
+function agendaMessage(msg){var el=$("agenda-status");if(el)el.textContent=msg;}
+function connectCalendar(){
+ if(!window.google||!google.accounts||!google.accounts.oauth2){agendaMessage("No se ha podido cargar el acceso de Google. Recarga la página e inténtalo de nuevo.");return;}
+ try{
+  var tokenClient=google.accounts.oauth2.initTokenClient({
+   client_id:GOOGLE_CLIENT_ID,
+   scope:"https://www.googleapis.com/auth/calendar.readonly",
+   callback:function(resp){
+    if(resp&&resp.access_token){
+     agendaToken=resp.access_token;
+     agendaTokenExpiry=Date.now()+(Number(resp.expires_in||3600)-60)*1000;
+     agendaMessage("Conectado a Google Calendar · cargando eventos…");
+     loadAgenda();
+     if(agendaTimer)clearInterval(agendaTimer);
+     agendaTimer=setInterval(function(){if(agendaToken&&Date.now()<agendaTokenExpiry){loadAgenda();}else{agendaToken=null;agendaMessage("La sesión ha caducado. Pulsa «Conectar Google» para actualizarla.");clearInterval(agendaTimer);}},5*60*1000);
+    }else{agendaMessage("Google no ha concedido acceso. Comprueba la autorización e inténtalo de nuevo.");}
+   },
+   error_callback:function(){agendaMessage("No se ha podido iniciar sesión con Google. Comprueba la configuración OAuth.");}
+  });
+  tokenClient.requestAccessToken({prompt:agendaToken?"":"consent"});
+ }catch(e){agendaMessage("Error al iniciar la conexión con Google Calendar.");}
+}
+function calendarRequest(cal,from,to){
+ var url="https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(cal.id)+"/events?"+[
+  "timeMin="+encodeURIComponent(from),
+  "timeMax="+encodeURIComponent(to),
+  "singleEvents=true","orderBy=startTime","maxResults=40"
+ ].join("&");
+ return fetch(url,{headers:{Authorization:"Bearer "+agendaToken}}).then(function(r){
+  if(!r.ok){if(r.status===401)agendaToken=null;throw new Error("Calendar API "+r.status);}
+  return r.json();
+ }).then(function(j){return (j.items||[]).map(function(ev){ev._calendar=cal;return ev;});});
+}
+function eventDate(ev){return ev.start&&(ev.start.dateTime||ev.start.date)?new Date(ev.start.dateTime||ev.start.date+"T00:00:00"):null;}
+function eventEnd(ev){return ev.end&&(ev.end.dateTime||ev.end.date)?new Date(ev.end.dateTime||ev.end.date+"T00:00:00"):null;}
+function eventTime(ev){
+ if(ev.start&&ev.start.date)return "Todo el día";
+ var d=eventDate(ev),e=eventEnd(ev);
+ if(!d)return "";
+ return new Intl.DateTimeFormat("es-ES",{timeZone:"Europe/Amsterdam",hour:"2-digit",minute:"2-digit"}).format(d)+(e?" – "+new Intl.DateTimeFormat("es-ES",{timeZone:"Europe/Amsterdam",hour:"2-digit",minute:"2-digit"}).format(e):"");
+}
+function renderAgenda(events){
+ var groups={},keys=[],html="",now=new Date();
+ events.sort(function(a,b){return eventDate(a)-eventDate(b);});
+ events.forEach(function(ev){
+  var d=eventDate(ev);if(!d)return;
+  var key=ev.start.date||new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Amsterdam",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+  if(!groups[key]){groups[key]=[];keys.push(key);}groups[key].push(ev);
+ });
+ keys.sort();
+ if(!keys.length){$("agenda-list").innerHTML='<div class="agenda-empty">No hay eventos próximos en los calendarios seleccionados.</div>';return;}
+ keys.forEach(function(key){
+  var parts=key.split("-"),date=new Date(+parts[0],+parts[1]-1,+parts[2]);
+  html+='<section class="agenda-day"><div class="agenda-date"><strong>'+date.getDate()+'</strong><span>'+esc(MESES[date.getMonth()].slice(0,3))+'</span><span>'+esc(DIAS[date.getDay()])+'</span></div><div class="agenda-events">';
+  groups[key].forEach(function(ev){
+   var cal=ev._calendar,detail=[];
+   if(ev.location)detail.push("📍 "+ev.location);
+   if(ev.description)detail.push(ev.description);
+   html+='<details class="agenda-event" style="--event-color:'+cal.color+'"><summary><div class="agenda-event-title">'+esc(ev.summary||"(Sin título)")+'</div><div class="agenda-event-meta">'+esc(eventTime(ev))+' · '+esc(cal.name)+'</div></summary>'+(detail.length?'<div class="agenda-event-detail">'+esc(detail.join("\n\n"))+'</div>':'')+'</details>';
+  });
+  html+='</div></section>';
+ });
+ $("agenda-list").innerHTML=html;
+}
+function loadAgenda(){
+ if(!agendaToken){agendaMessage("Conecta tu cuenta para consultar tus próximos eventos.");return;}
+ var now=new Date(),from=now.toISOString(),to=new Date(now.getTime()+60*86400000).toISOString();
+ agendaMessage("Actualizando agenda…");
+ Promise.all(CALENDARS.map(function(cal){return calendarRequest(cal,from,to);})).then(function(results){
+  var all=[];results.forEach(function(a){all=all.concat(a);});
+  renderAgenda(all);
+  agendaMessage("Actualizada: "+new Intl.DateTimeFormat("es-ES",{timeZone:"Europe/Amsterdam",hour:"2-digit",minute:"2-digit"}).format(new Date())+" · próximos 60 días");
+  var b=$("agenda-login");if(b)b.textContent="Actualizar acceso";
+ }).catch(function(err){
+  agendaMessage(agendaToken?"No se pudieron cargar los eventos. Comprueba que los calendarios están compartidos con tu cuenta y que la API está habilitada.":"La sesión de Google ha caducado. Pulsa «Conectar Google» para volver a autorizar.");
+  if(!agendaToken){var b=$("agenda-login");if(b)b.textContent="Conectar Google";}
+ });
+}
+agendaShell();
 /* --- lista de la compra --- */
 var sel={};try{sel=JSON.parse(ls("lista")||"{}");}catch(e){}
 function drawItems(){
