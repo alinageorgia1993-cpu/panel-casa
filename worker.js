@@ -33,7 +33,7 @@ export default {
             cf: { cacheTtl: 0, cacheEverything: false }
           });
           const body = await upstream.text();
-          return response("DIRECT_STATUS=" + upstream.status + "\nCONTENT_TYPE=" + (upstream.headers.get("content-type") || "") + "\n\n" + body.slice(0, 12000), upstream.ok ? 200 : 502);
+          return response("DIRECT_STATUS=" + upstream.status + "\nCONTENT_TYPE=" + (upstream.headers.get("content-type") || "") + "\n\n" + (() => { const marker = body.toLowerCase().indexOf("actuele vertrektijden"); return marker >= 0 ? body.slice(Math.max(0, marker - 2500), marker + 18000) : "MARKER_NOT_FOUND\\nHTML_LENGTH=" + body.length + "\\n" + body.slice(-12000); })(), upstream.ok ? 200 : 502);
         } catch (error) {
           return response("DIRECT_FETCH_ERROR: " + String(error), 502);
         }
