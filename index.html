@@ -210,7 +210,7 @@ var DRGL=[
 function fetchStopText(url){
  var proxies=[
   "https://api.allorigins.win/raw?url="+encodeURIComponent(url),
-  "https://r.jina.ai/http://"+url.replace(/^https?:\\/\\//,"")
+  "https://r.jina.ai/http://"+url.replace(/^https?:\/\//,"")
  ];
  function attempt(n){
   return fetch(proxies[n],{cache:"no-store"}).then(function(r){
@@ -225,11 +225,11 @@ function fetchStopText(url){
 }
 function parseDrglDepartures(raw,stop){
  var doc=new DOMParser().parseFromString(raw,"text/html");
- var txt=(doc.body?doc.body.textContent:raw).replace(/\\s+/g," ");
- var re=/(\\d{1,2}:\\d{2})(?:\\s+(?:VERTROKKEN|[+-]\\d+|Perron\\s+[A-Z]))*\\s+(323|404|400)\\s+(.{1,70}?)\\s+Bus/gi;
+ var txt=(doc.body?doc.body.textContent:raw).replace(/\s+/g," ");
+ var re=/(\d{1,2}:\d{2})(?:\s+(?:VERTROKKEN|[+-]\d+|Perron\s+[A-Z]))*\s+(323|404|400)\s+(.{1,70}?)\s+Bus/gi;
  var out=[],m,now=new Date(),nowMin=now.getHours()*60+now.getMinutes(),seen={};
  while((m=re.exec(txt))!==null){
-  var line=m[2],dest=m[3].replace(/\\s+/g," ").trim(),p=m[1].split(":"),clock=(+p[0])*60+(+p[1]);
+  var line=m[2],dest=m[3].replace(/\s+/g," ").trim(),p=m[1].split(":"),clock=(+p[0])*60+(+p[1]);
   var delta=(clock-nowMin+1440)%1440;
   if(delta>720)delta-=1440;
   if(delta<0||delta>180)continue;
