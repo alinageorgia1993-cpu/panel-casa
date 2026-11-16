@@ -21,6 +21,30 @@ export default {
       const stopUrl = UPSTREAM[key];
       if (!stopUrl) return response("Unknown stop", 400);
 
+      // Diagnostic mode: query Hermes' actual departures JSON endpoint.
+      if (url.searchParams.get("api") === "1") {
+        try {
+          const stopData = key === "churchilllaan"
+            ? { stopid: "NL:S:64051510", town: "Eindhoven", name: "Churchilllaan" }
+            : { stopid: "NL:S:64052010", town: "Eindhoven", name: "WoensXL/ZH Catharina" };
+          const apiUrl = new URL("https://www.hermes.nl/api/travelplanner/stops/departures");
+          apiUrl.searchParams.set("stop", JSON.stringify(stopData));
+          const upstream = await fetch(apiUrl.toString(), {
+            headers: {
+              "Accept": "application/json, text/plain, */*",
+              "Accept-Language": "nl-NL,nl;q=0.9,en;q=0.8",
+              "Referer": stopUrl,
+              "User-Agent": "Mozilla/5.0 (compatible; PanelCasa/1.0)"
+            },
+            cf: { cacheTtl: 0, cacheEverything: false }
+          });
+          const body = await upstream.text();
+          return response(body, upstream.ok ? 200 : 502, upstream.headers.get("content-type") || "application/json; charset=utf-8");
+        } catch (error) {
+          return response("HERMES_API_ERROR: " + String(error), 502);
+        }
+      }
+
       // Diagnostic mode: test Hermes directly, without Jina Reader.
       if (url.searchParams.get("direct") === "1") {
         try {
