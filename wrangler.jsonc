@@ -7,5 +7,12 @@
     "directory": "./",
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "panel-casa-tasks",
+      "database_id": "686d1e2d-71b2-4a9d-93a6-828d368f1687"
+    }
+  ]
 }
