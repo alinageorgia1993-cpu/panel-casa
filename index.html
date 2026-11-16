@@ -100,8 +100,8 @@ var CFG={
   nightFrom:23, nightTo:6              /* modo noche */
 };
 var STOPS=[
-  {title:"Churchillaan → Woensel XL", name:"Churchillaan", town:"Eindhoven", lines:null, dest:""},
-  {title:"Woensel XL → Aeropuerto (400)", name:"Woensel XL", town:"Eindhoven", lines:["400"], dest:""}
+  {title:"Churchillaan → Woensel XL", name:"Churchillaan", town:"Eindhoven", lines:null, dest:"", tpc:""},
+  {title:"Woensel XL → Aeropuerto (400)", name:"Woensel XL", town:"Eindhoven", lines:["400"], dest:"", tpc:""}
 ];
 var ITEMS=[["🥛","Leche"],["🍞","Pan"],["🥚","Huevos"],["🍎","Fruta"],["🥦","Verdura"],["🥔","Patatas"],["🥩","Carne"],["🐟","Pescado"],["🧀","Queso"],["🥣","Yogur"],["🧈","Mantequilla"],["🍝","Pasta"],["🍚","Arroz"],["☕","Café"],["💧","Agua"],["🍷","Bebidas"],["🍪","Snacks"],["🧻","Papel WC"],["🧴","Limpieza"],["🗑️","Bolsas basura"]];
 /* ============================================ */
@@ -176,20 +176,26 @@ function areas(s,ok,bad){
     ls(key,JSON.stringify(out));ok(out);
   },function(e){bad("No se pudo leer la lista de paradas ("+(e&&e.message?e.message:e)+")");},true);
 }
+function collect(o,out,s,depth){
+  var k,ps,id,x,m,ln;
+  if(!o||typeof o!=="object"||depth>4)return;
+  if(o.Passes){ps=o.Passes;
+    for(id in ps){x=ps[id];ln=x.LinePublicNumber;
+      if(s.lines&&s.lines.indexOf(ln)<0)continue;
+      if(s.dest&&(x.DestinationName50||"").toLowerCase().indexOf(s.dest)<0)continue;
+      if(x.TripStopStatus==="CANCEL")continue;
+      m=minsTo(x.ExpectedDepartureTime||x.TargetDepartureTime||x.ExpectedArrivalTime);
+      if(m===null||m<-1)continue;
+      out.push({l:ln,d:x.DestinationName50||"",m:m,t:(x.ExpectedDepartureTime||x.TargetDepartureTime||"").substr(11,5)});}
+    return;}
+  for(k in o){collect(o[k],out,s,depth+1);}
+}
 function bus(i){
   var s=STOPS[i],box=$("bus"+i);
   function fail(e){box.innerHTML='<div class="bt">'+s.title+'</div><div class="small">'+(typeof e==="string"?e:"No se pudieron cargar los horarios ("+(e&&e.message?e.message:"error")+")")+'</div>';}
-  areas(s,function(a){
-    getJSON("https://v0.ovapi.nl/stopareacode/"+a.join(","),function(data){
-      var list=[],ar,tp,ps,id,x,m,ln;
-      for(ar in data){for(tp in data[ar]){ps=data[ar][tp].Passes||{};
-        for(id in ps){x=ps[id];ln=x.LinePublicNumber;
-          if(s.lines&&s.lines.indexOf(ln)<0)continue;
-          if(s.dest&&(x.DestinationName50||"").toLowerCase().indexOf(s.dest)<0)continue;
-          if(x.TripStopStatus==="CANCEL")continue;
-          m=minsTo(x.ExpectedDepartureTime||x.TargetDepartureTime||x.ExpectedArrivalTime);
-          if(m===null||m<-1)continue;
-          list.push({l:ln,d:x.DestinationName50||"",m:m,t:(x.ExpectedDepartureTime||x.TargetDepartureTime||"").substr(11,5)});}}}
+  function go(url){
+    getJSON(url,function(data){
+      var list=[];collect(data,list,s,0);
       list.sort(function(p,q){return p.m-q.m;});
       var h='<div class="bt">'+s.title+'</div>',k;
       if(!list.length)h+='<div class="small">Sin salidas próximas</div>';
@@ -198,7 +204,9 @@ function bus(i){
       box.innerHTML=h;
       var d=new Date();$("busup").textContent="Actualizado a las "+dos(d.getHours())+":"+dos(d.getMinutes());
     },fail,true);
-  },fail);
+  }
+  if(s.tpc){go("https://v0.ovapi.nl/tpc/"+s.tpc);}
+  else{areas(s,function(a){go("https://v0.ovapi.nl/stopareacode/"+a.join(","));},fail);}
 }
 
 /* --- calendario --- */
