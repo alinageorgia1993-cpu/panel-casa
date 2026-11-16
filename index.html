@@ -62,12 +62,12 @@ body.night #night{display:-webkit-flex;display:flex}
 #alarm.on{display:-webkit-flex;display:flex}
 /* Dashboard refresh: compact cards, clear departure hierarchy and agenda */
 .screen{gap:0}
-.top{height:31%;min-height:190px}
+.top{height:25%;min-height:155px}
 .mid{flex:1;min-height:0;gap:0}
 .clockbox{flex:1.15}
 .side{flex:.85}
-.bus{flex:1.08;overflow:auto}
-.cal{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;padding:14px 16px}
+.bus{flex:.72;min-width:0;overflow:auto}
+.cal{flex:2.1;min-width:0;display:flex;flex-direction:column;overflow:hidden;padding:16px 18px}
 .cal iframe{flex:1;min-height:0;width:100%;height:auto;border:0;border-radius:12px;background:#fff}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
 .cal-head h2{margin:0;color:var(--text);font-size:19px}
@@ -85,14 +85,14 @@ body.night #night{display:-webkit-flex;display:flex}
 .bus-meta{font-size:11px;color:var(--muted);margin-top:6px}
 @media(max-width:760px){
  .screen{padding:8px 8px 0}
- .top{height:34%;min-height:150px}
+ .top{height:29%;min-height:140px}
  #time{font-size:clamp(54px,12vw,82px)}
  #date{font-size:17px}
  .card{padding:10px 11px;margin:0 4px 8px}
  h2{font-size:15px}
  .mid{gap:0}
- .bus{flex:1.05}
- .cal{flex:.95;padding:10px}
+ .bus{flex:.72;min-width:0}
+ .cal{flex:1.9;min-width:0;padding:12px}
  .dep-min{font-size:17px}
  .dep-destination{font-size:13px}
  .dep-line{font-size:15px}
