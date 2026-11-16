@@ -216,7 +216,7 @@ h2{font-size:15px;letter-spacing:.015em;color:#c5cec8;font-weight:550}
       <div class="card side"><h2>🌧️ Lluvia · próximas 2 h</h2><div id="temp"></div><div id="rtxt">Cargando…</div><div id="rbars"></div></div>
     </div>
     <div class="row mid">
-      <div class="card bus"><h2>🚌 Autobuses</h2><div id="bus0"></div><div id="bus1"></div><div class="small" id="busup"></div></div>
+      <div class="card bus"><h2>🚌 Autobuses</h2><div id="bus0"></div><div id="bus1"></div><div id="bus2"></div><div class="small" id="busup"></div></div>
       <div class="card cal" id="cal"></div>
     </div>
     <div class="card" id="papier"></div>
@@ -309,9 +309,10 @@ function rain(){
 /* --- Autobuses: salidas Hermes resumidas en tarjetas --- */
 var HERMES=[
  {title:"Churchilllaan → WoensXL",line:["323","404"],direction:"Eindhoven Station",label:"323 / 404",stop:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64051510%22,%22town%22:%22Eindhoven%22,%22name%22:%22Churchilllaan%22%7D"},
- {title:"WoensXL → Aeropuerto",line:["400"],direction:"Airport",label:"400",stop:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64052010%22,%22town%22:%22Eindhoven%22,%22name%22:%22WoensXL/ZH Catharina%22%7D"}
+ {title:"WoensXL → Aeropuerto",line:["400"],direction:"Airport",label:"400",stop:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64052010%22,%22town%22:%22Eindhoven%22,%22name%22:%22WoensXL/ZH Catharina%22%7D"},
+ {title:"BIC → WoensXL / Eindhoven Station",line:["400"],direction:"Eindhoven Station",label:"400",stop:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64100160%22,%22town%22:%22Eindhoven%22,%22name%22:%22BIC%22%7D"}
 ];
-var hermesData=[[],[]],hermesLast=[0,0],hermesError=[false,false];
+var hermesData=[[],[],[]],hermesLast=[0,0,0],hermesError=[false,false,false];
 function parseHermesJson(payload,stop){
  var results=payload&&payload.results;
  if(!Array.isArray(results)||!results.length)return [];
@@ -336,7 +337,7 @@ function parseHermesJson(payload,stop){
  return unique.slice(0,2);
 }
 function hermesFetch(i){
- var stop=HERMES[i],proxy="https://panel-casa.alinageorgia1993.workers.dev/api/hermes?stop="+(i===0?"churchilllaan":"woensxl");
+ var stop=HERMES[i],proxy="https://panel-casa.alinageorgia1993.workers.dev/api/hermes?stop="+(["churchilllaan","woensxl","bic"][i]);
  fetch(proxy,{cache:"no-store",headers:{"Accept":"application/json"}})
  .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
  .then(function(payload){var d=parseHermesJson(payload,stop);if(!d.length)throw new Error("No hay salidas próximas para el destino configurado");hermesData[i]=d;hermesLast[i]=Date.now();hermesError[i]=false;renderHermes();})
