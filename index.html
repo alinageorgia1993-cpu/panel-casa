@@ -318,14 +318,43 @@ function hermesMinutes(v){
  return null;
 }
 function parseHermesText(raw,stop){
- var txt=raw.replace(/\r/g,"\n").replace(/\*+/g," ").replace(/[ \t]+/g," "),out=[],re=/Lijnnummer\s*(\d+)[\s\S]{0,220}?Richting\s*(?:Richting\s*)?([^\n]+)[\s\S]{0,180}?(over\s+\d+\s+min|\b\d{1,2}:\d{2}\b)/gi,m;
- while((m=re.exec(txt))!==null){
-  var line=m[1].trim(),dir=m[2].replace(/^[：:]\s*/,"").trim(),mins=hermesMinutes(m[3]);
-  if(stop.line.indexOf(line)<0||dir.toLowerCase().indexOf(stop.direction.toLowerCase())<0||mins===null)continue;
+ /* Hermes separa las etiquetas y sus valores en líneas distintas:
+    Lijnnummer / Lijnnummer 400 / Richting / Richting Airport /
+    Vertrek / Vertrekt / over 3 min. Parseamos cada salida como bloque. */
+ var txt=String(raw||"").replace(/\\r/g,"").replace(/\\*+/g," ").replace(/[ \\t]+/g," ");
+ var rows=txt.split("\\n").map(function(s){return s.trim();}).filter(Boolean);
+ var out=[];
+ for(var i=0;i<rows.length;i++){
+  var head=rows[i].match(/Lijnnummer\\s*[:：]?\\s*(\\d+)/i);
+  if(!head)continue;
+  var line=head[1],block=[],j=i+1;
+  while(j<rows.length&&!/Lijnnummer\\s*[:：]?\\s*\\d+/i.test(rows[j])){
+   block.push(rows[j]);j++;
+  }
+  if(stop.line.indexOf(line)<0)continue;
+  var dir="";
+  for(var k=0;k<block.length;k++){
+   var dm=block[k].match(/^Richting\\s*[:：]?\\s*(.*)$/i);
+   if(dm&&dm[1]){dir=dm[1].trim();break;}
+   if(/^Richting$/i.test(block[k])&&block[k+1]){dir=block[k+1].replace(/^Richting\\s*/i,"").trim();break;}
+  }
+  if(!dir||dir.toLowerCase().indexOf(stop.direction.toLowerCase())<0)continue;
+  var mins=null;
+  for(var z=0;z<block.length;z++){
+   var mm=block[z].match(/over\\s+(\\d+)\\s+min/i);
+   if(mm){mins=+mm[1];break;}
+   var clock=block[z].match(/\\b(\\d{1,2}):(\\d{2})\\b/);
+   if(clock){mins=hermesMinutes(clock[0]);break;}
+  }
+  if(mins===null)continue;
   out.push({line:line,direction:dir,mins:mins,at:Date.now()});
+  i=j-1;
  }
- out.sort(function(x,y){return x.mins-y.mins;});
- var unique=[];out.forEach(function(x){if(!unique.some(function(y){return y.line===x.line&&y.mins===x.mins;}))unique.push(x);});
+ out.sort(function(a,b){return a.mins-b.mins;});
+ var unique=[];
+ out.forEach(function(x){
+  if(!unique.some(function(y){return y.line===x.line&&y.mins===x.mins;}))unique.push(x);
+ });
  return unique.slice(0,2);
 }
 function hermesFetch(i){
