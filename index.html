@@ -359,8 +359,8 @@ function parseHermesText(raw,stop){
  return unique.slice(0,2);
 }
 function hermesFetch(i){
- var stop=HERMES[i],proxy="https://r.jina.ai/http://"+stop.stop.replace(/^https?:\/\//,"");
- fetch(proxy,{cache:"no-store",headers:{"Accept":"text/plain","X-Return-Format":"text"}})
+ var stop=HERMES[i],proxy="https://panel-casa.alinageorgia1993.workers.dev/api/hermes?stop="+(i===0?"churchilllaan":"woensxl");
+ fetch(proxy,{cache:"no-store",headers:{"Accept":"text/plain"}})
  .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.text();})
  .then(function(txt){var d=parseHermesText(txt,stop);if(!d.length)throw new Error("No se encontraron salidas válidas");hermesData[i]=d;hermesLast[i]=Date.now();hermesError[i]=false;renderHermes();})
  .catch(function(){hermesError[i]=true;renderHermes();});
