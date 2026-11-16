@@ -252,6 +252,38 @@ h2{font-size:15px;letter-spacing:.015em;color:#c5cec8;font-weight:550}
 #s1 #papier>div:nth-child(2){font-size:11px!important}
 @media(max-width:760px){#s1{padding:8px 8px 0;gap:7px}#s1 .top{min-height:105px;max-height:none;gap:7px}#s1 .clockbox{padding:9px 11px}#s1 #time{font-size:clamp(49px,10vw,68px)}#s1 #date{font-size:12px}#s1 .side{padding:9px 10px}#s1 .weather-label{font-size:8px}#s1 #temp{font-size:25px}#s1 #rtxt{font-size:9px}#s1 #rbars{height:12px}#s1 .mid{gap:7px}#s1 .bus{flex:1.2;padding:9px 8px}#s1 .cal{flex:.8;min-width:0;padding:9px 8px}#s1 .bus-heading h2{font-size:10px}#s1 .bus-live{font-size:7px;padding:3px 5px}#s1 .bus-stops{gap:5px}#s1 .bus-stops>div{padding:0 6px}#s1 .bus-route-title{font-size:9px}#s1 .hermes-line{font-size:9px;padding:1px 5px}#s1 .hermes-big{font-size:19px}#s1 .hermes-direction{font-size:8px}#s1 .hermes-next{font-size:12px}#s1 .hermes-caption,#s1 .hermes-next-label{font-size:8px}#s1 .bus-meta{font-size:7px}#s1 .agenda-event summary{grid-template-columns:1fr;gap:1px}#s1 .agenda-event-title{font-size:10px}#s1 .agenda-event-meta{font-size:8px}#s1 .agenda-date strong{font-size:17px}#s1 .agenda-day{grid-template-columns:30px minmax(0,1fr);gap:4px}#s1 .agenda-event-detail{margin-left:0}}
 @media(max-height:700px) and (min-width:761px){#s1{gap:6px;padding-top:7px}#s1 .top{min-height:94px}#s1 #time{font-size:60px}#s1 .bus-stops{gap:4px}#s1 .bus-group{padding:3px 1px}#s1 .hermes-big{font-size:22px}#s1 .hermes-direction{margin-bottom:1px}#s1 .cal{padding:9px 12px}#s1 .agenda-day{padding:3px 0}#s1 #papier{max-height:38px}}
+
+/* TASKS 3.0 · sección integrada */
+#s3{gap:12px}
+.tasks-shell{display:flex;flex-direction:column;gap:12px;min-height:0;flex:1}
+.tasks-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tasks-head h2{margin:0;color:#e7eee8;font-size:17px;letter-spacing:.09em}
+.tasks-switch{display:flex;gap:6px}
+.tasks-switch button,.task-add button{border:1px solid rgba(169,194,178,.22);background:rgba(169,194,178,.08);color:#dce8df;border-radius:9px;padding:9px 13px;font:inherit;font-size:13px}
+.tasks-switch button.active{background:#a9c2b2;color:#17211b;font-weight:700}
+.task-create{display:grid;grid-template-columns:minmax(150px,1fr) 145px 135px 115px auto;gap:8px}
+.task-create input,.task-create select{min-width:0;width:100%;background:#11181d;color:#edf0ed;border:1px solid rgba(190,205,195,.18);border-radius:9px;padding:11px;font:inherit;font-size:13px}
+.task-create button{background:#a9c2b2;color:#17211b;border:0;border-radius:9px;padding:10px 16px;font-weight:700}
+.tasks-list{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:7px}
+.task-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:11px 12px;border:1px solid rgba(190,205,195,.11);border-radius:11px;background:rgba(8,13,15,.22)}
+.task-row input{width:18px;height:18px;accent-color:#a9c2b2}
+.task-title{font-size:14px;color:#e8eee9;overflow-wrap:anywhere}
+.task-row.done .task-title{text-decoration:line-through;color:#829087}
+.task-meta{font-size:10px;color:#98a69c;margin-top:4px}
+.task-priority{font-size:10px;color:#d9b78e;white-space:nowrap}
+.task-delete{border:0;background:transparent;color:#9ba59f;font-size:18px;padding:4px 7px}
+.tasks-message{font-size:12px;color:#aab5ad;padding:6px 2px}
+.tasks-empty{padding:24px;text-align:center;color:#9ba59f;font-size:13px}
+@media(max-width:760px){
+ #s3{padding:10px 9px 0;gap:9px}
+ .task-create{grid-template-columns:minmax(0,1fr) minmax(110px,.65fr);gap:6px}
+ .task-create button{min-height:38px}
+ .task-row{grid-template-columns:22px minmax(0,1fr) auto auto;gap:7px;padding:9px}
+ .task-title{font-size:12px}
+ .tasks-head h2{font-size:14px}
+}
+@media(max-width:760px) and (orientation:landscape){.task-create{grid-template-columns:minmax(130px,1fr) 120px 115px 100px auto}}
+
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -280,7 +312,22 @@ h2{font-size:15px;letter-spacing:.015em;color:#c5cec8;font-weight:550}
       </div>
     </div>
   </div>
-  <div id="tabs"><button class="on" data-s="s1">🏠 Inicio</button><button data-s="s2">🛒 Cocina</button></div>
+  
+  <div id="s3" class="screen off">
+    <div class="card tasks-shell">
+      <div class="tasks-head"><h2>✓ TASKS · CASA</h2><div class="tasks-switch"><button type="button" class="active" data-task-view="today">Today</button><button type="button" data-task-view="week">Week</button></div></div>
+      <form class="task-create" id="task-form">
+        <input id="task-title" type="text" maxlength="160" placeholder="Añadir una tarea…" required>
+        <select id="task-category"><option value="HOUSE">HOUSE</option><option value="PLANTS">PLANTS</option><option value="ERRANDS">ERRANDS</option><option value="ADMIN">ADMIN</option><option value="ARCHIBALD">ARCHIBALD</option><option value="PERSONAL">PERSONAL</option></select>
+        <input id="task-date" type="date" aria-label="Fecha">
+        <select id="task-priority"><option value="normal">Normal</option><option value="high">Alta</option><option value="low">Baja</option></select>
+        <button type="submit">Añadir</button>
+      </form>
+      <div id="tasks-message" class="tasks-message">Conectando con la lista de tareas…</div>
+      <div id="tasks-list" class="tasks-list"><div class="tasks-empty">Cargando tareas…</div></div>
+    </div>
+  </div>
+  <div id="tabs"><button class="on" data-s="s1">🏠 Inicio</button><button data-s="s2">🛒 Cocina</button><button data-s="s3">✓ Tasks</button></div>
 </div>
 <script>
 (function(){
@@ -501,6 +548,47 @@ function loadAgenda(){
  });
 }
 agendaShell();
+
+/* --- TASKS 3.0: almacenamiento persistente mediante Cloudflare D1 --- */
+var TASKS_API="https://panel-casa.alinageorgia1993.workers.dev/api/tasks";
+var taskItems=[],taskView="today";
+function taskDate(d){var x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10);}
+function taskEsc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function taskMessage(s){var e=$("tasks-message");if(e)e.textContent=s;}
+function taskLoad(){
+ fetch(TASKS_API,{headers:{"Accept":"application/json"},cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}).then(function(data){
+  taskItems=Array.isArray(data.tasks)?data.tasks:[];
+  taskMessage(taskItems.length+" tareas guardadas · sincronización en la nube");
+  taskRender();
+ }).catch(function(){taskMessage("La base de datos de tareas aún no está conectada en Cloudflare. La interfaz ya está preparada; falta crear y vincular D1.");$("tasks-list").innerHTML='<div class="tasks-empty">TASKS está preparada. En cuanto conectemos la base de datos, tus tareas se guardarán y sincronizarán entre dispositivos.</div>';});
+}
+function taskRender(){
+ var now=new Date(),today=taskDate(now),weekEnd=new Date(now.getFullYear(),now.getMonth(),now.getDate()+7),end=taskDate(weekEnd);
+ var shown=taskItems.filter(function(t){if(t.status==="done")return false;if(!t.due_date)return taskView==="today";return taskView==="today"?t.due_date<=today:t.due_date>=today&&t.due_date<end;});
+ shown.sort(function(a,b){var p={high:0,normal:1,low:2};return (a.due_date||"9999").localeCompare(b.due_date||"9999")||(p[a.priority]||1)-(p[b.priority]||1);});
+ if(!shown.length){$("tasks-list").innerHTML='<div class="tasks-empty">No tienes tareas pendientes en '+(taskView==="today"?"Today":"los próximos 7 días")+'.</div>';return;}
+ var out="";
+ shown.forEach(function(t){out+='<div class="task-row"><input type="checkbox" data-task-done="'+taskEsc(t.id)+'" aria-label="Completar tarea"><div><div class="task-title">'+taskEsc(t.title)+'</div><div class="task-meta">'+taskEsc(t.category)+' · '+(t.due_date?taskEsc(t.due_date):"Sin fecha")+'</div></div><div class="task-priority">'+(t.priority==="high"?"ALTA":t.priority==="low"?"BAJA":"")+'</div><button type="button" class="task-delete" data-task-delete="'+taskEsc(t.id)+'" aria-label="Eliminar tarea">×</button></div>';});
+ $("tasks-list").innerHTML=out;
+}
+$("task-date").value=taskDate(new Date());
+$("task-form").addEventListener("submit",function(e){
+ e.preventDefault();var title=$("task-title").value.replace(/^\s+|\s+$/g,"");if(!title)return;
+ var payload={title:title,category:$("task-category").value,due_date:$("task-date").value||null,priority:$("task-priority").value};
+ taskMessage("Guardando tarea…");
+ fetch(TASKS_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}).then(function(){ $("task-title").value="";taskLoad();}).catch(function(){taskMessage("No se pudo guardar: la base de datos D1 todavía no está vinculada.");});
+});
+$("tasks-list").addEventListener("change",function(e){
+ var id=e.target.getAttribute("data-task-done");if(!id)return;
+ fetch(TASKS_API+"/"+encodeURIComponent(id),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:e.target.checked?"done":"open"})}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}).then(taskLoad).catch(function(){taskMessage("No se pudo actualizar la tarea.");});
+});
+$("tasks-list").addEventListener("click",function(e){
+ var id=e.target.getAttribute("data-task-delete");if(!id)return;
+ if(!confirm("¿Eliminar esta tarea?"))return;
+ fetch(TASKS_API+"/"+encodeURIComponent(id),{method:"DELETE"}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}).then(taskLoad).catch(function(){taskMessage("No se pudo eliminar la tarea.");});
+});
+document.querySelectorAll("[data-task-view]").forEach(function(b){b.addEventListener("click",function(){taskView=this.getAttribute("data-task-view");document.querySelectorAll("[data-task-view]").forEach(function(x){x.className=x===b?"active":"";});taskRender();});});
+
 /* --- lista de la compra --- */
 var sel={};try{sel=JSON.parse(ls("lista")||"{}");}catch(e){}
 function drawItems(){
