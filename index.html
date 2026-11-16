@@ -192,6 +192,17 @@ h2{font-size:15px;letter-spacing:.015em;color:#c5cec8;font-weight:550}
 .hermes-live .bus-link{margin-top:6px}
 .bus{overflow:auto}
 @media(max-width:760px){.hermes-live iframe{height:225px}}
+
+/* Minimal live-departure typography */
+.bus{overflow:auto}
+.hermes-line{display:inline-block;background:#a9c2b2;color:#17211b;font-weight:750;font-size:15px;padding:3px 9px;border-radius:7px;margin:2px 0 9px}
+.hermes-caption{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#aab5ad;margin-top:3px}
+.hermes-big{font-size:clamp(27px,3vw,39px);font-weight:650;letter-spacing:-.04em;line-height:1.12;margin:4px 0 5px;color:#f2f4ef}
+.hermes-direction{font-size:13px;color:#aebbb2;margin-bottom:13px}
+.hermes-next-label{font-size:12px;color:#aab5ad;text-transform:uppercase;letter-spacing:.06em;margin-top:8px}
+.hermes-next{font-size:21px;font-weight:600;margin-top:3px;color:#dbe4dc}
+.hermes-live-error{color:#d9b78e}
+@media(max-width:760px){.hermes-big{font-size:25px}.hermes-direction{font-size:11px}.hermes-next{font-size:18px}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -295,19 +306,52 @@ function rain(){
   },function(){$("rtxt").textContent="No se pudo cargar el tiempo";});
 }
 
-/* --- Autobuses: paneles oficiales Hermes en vivo --- */
+/* --- Autobuses: salidas Hermes resumidas en tarjetas --- */
 var HERMES=[
- {title:"Churchilllaan → WoensXL",subtitle:"323 / 404 · Eindhoven Station",url:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64051510%22,%22town%22:%22Eindhoven%22,%22name%22:%22Churchilllaan%22%7D"},
- {title:"WoensXL → Aeropuerto",subtitle:"400 · Airport",url:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64052010%22,%22town%22:%22Eindhoven%22,%22name%22:%22WoensXL%2FZH%20Catharina%22%7D"}
+ {title:"Churchilllaan → WoensXL",line:["323","404"],direction:"Eindhoven Station",label:"323 / 404",stop:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64051510%22,%22town%22:%22Eindhoven%22,%22name%22:%22Churchilllaan%22%7D"},
+ {title:"WoensXL → Aeropuerto",line:["400"],direction:"Airport",label:"400",stop:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64052010%22,%22town%22:%22Eindhoven%22,%22name%22:%22WoensXL/ZH Catharina%22%7D"}
 ];
-function renderHermesLinks(){
- HERMES.forEach(function(stop,i){
-  var box=$("bus"+i);
-  if(!box)return;
-  box.innerHTML='<section class="hermes-live"><div class="bus-route-title">'+stop.title+'</div><div class="bus-state">'+stop.subtitle+'</div><iframe title="Salidas en vivo Hermes: '+stop.title+'" src="'+stop.url+'" loading="eager" referrerpolicy="strict-origin-when-cross-origin"></iframe><a class="bus-link" href="'+stop.url+'" target="_blank" rel="noopener">Abrir Hermes ↗</a></section>';
- });
- $("busup").textContent="Datos oficiales Hermes · la página de la parada se actualiza aprox. cada 25 s.";
+var hermesData=[[],[]],hermesLast=[0,0],hermesError=[false,false];
+function hermesMinutes(v){
+ var m=v.match(/over\s+(\d+)\s+min/i);if(m)return +m[1];
+ var t=v.match(/\b(\d{1,2}):(\d{2})\b/);if(t){var now=new Date(),n=+t[1]*60+(+t[2]),cur=now.getHours()*60+now.getMinutes();return (n-cur+1440)%1440;}
+ return null;
 }
+function parseHermesText(raw,stop){
+ var txt=raw.replace(/\r/g,"\n").replace(/\*+/g," ").replace(/[ \t]+/g," "),out=[],re=/Lijnnummer\s*(\d+)[\s\S]{0,220}?Richting\s*(?:Richting\s*)?([^\n]+)[\s\S]{0,180}?(over\s+\d+\s+min|\b\d{1,2}:\d{2}\b)/gi,m;
+ while((m=re.exec(txt))!==null){
+  var line=m[1].trim(),dir=m[2].replace(/^[：:]\s*/,"").trim(),mins=hermesMinutes(m[3]);
+  if(stop.line.indexOf(line)<0||dir.toLowerCase().indexOf(stop.direction.toLowerCase())<0||mins===null)continue;
+  out.push({line:line,direction:dir,mins:mins,at:Date.now()});
+ }
+ out.sort(function(x,y){return x.mins-y.mins;});
+ var unique=[];out.forEach(function(x){if(!unique.some(function(y){return y.line===x.line&&y.mins===x.mins;}))unique.push(x);});
+ return unique.slice(0,2);
+}
+function hermesFetch(i){
+ var stop=HERMES[i],proxy="https://r.jina.ai/http://"+stop.stop.replace(/^https?:\/\//,"");
+ fetch(proxy,{cache:"no-store",headers:{"Accept":"text/plain","X-Return-Format":"text"}})
+ .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.text();})
+ .then(function(txt){var d=parseHermesText(txt,stop);if(!d.length)throw new Error("No se encontraron salidas válidas");hermesData[i]=d;hermesLast[i]=Date.now();hermesError[i]=false;renderHermes();})
+ .catch(function(){hermesError[i]=true;renderHermes();});
+}
+function renderHermes(){
+ HERMES.forEach(function(stop,i){
+  var box=$("bus"+i);if(!box)return;
+  var d=hermesData[i],html='<section class="bus-group"><div class="bus-route-title">'+stop.title+'</div><div class="hermes-line">'+stop.label+'</div>';
+  if(!d.length){html+='<div class="bus-state">'+(hermesError[i]?'No se pudo obtener la salida en vivo de Hermes.':'Consultando salidas actuales…')+'</div>';}
+  else{
+   var first=d[0],second=d[1],m=Math.max(0,first.mins-Math.floor((Date.now()-first.at)/60000));
+   html+='<div class="hermes-caption">Próximo bus</div><div class="hermes-big">En '+m+' minutos</div><div class="hermes-direction">Dirección: '+stop.direction+'</div>';
+   if(second){var m2=Math.max(0,second.mins-Math.floor((Date.now()-second.at)/60000));html+='<div class="hermes-next-label">Siguiente bus</div><div class="hermes-next">En '+m2+' minutos</div>';}
+   else{html+='<div class="hermes-next-label">Siguiente bus</div><div class="bus-state">Aún no hay otro horario disponible.</div>';}
+  }
+  html+='<div class="bus-meta">'+(hermesLast[i]?'Actualizado '+new Date(hermesLast[i]).toLocaleTimeString('es-NL',{hour:'2-digit',minute:'2-digit'}):'Fuente: Hermes')+'</div></section>';
+  box.innerHTML=html;
+ });
+ $("busup").textContent="Salidas oficiales Hermes · consulta cada 25 segundos";
+}
+function startHermes(){renderHermes();hermesFetch(0);hermesFetch(1);setInterval(function(){hermesFetch(0);hermesFetch(1);},25000);setInterval(renderHermes,30000);}
 /* --- agenda Google Calendar: OAuth de solo lectura + agenda agrupada --- */
 var GOOGLE_CLIENT_ID="338582084819-v6mm7auokf0ct40rni42h73nkcha0du2.apps.googleusercontent.com";
 var CALENDARS=[
@@ -439,7 +483,7 @@ for(q=0;q<tabs.length;q++){tabs[q].addEventListener("click",function(){
 
 tick();setInterval(tick,5000);
 rain();setInterval(rain,300000);
-renderHermesLinks();
+startHermes();
 setInterval(function(){location.reload();},6*3600*1000);
 })();
 </script>
