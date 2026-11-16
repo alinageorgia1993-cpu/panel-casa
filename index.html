@@ -184,6 +184,14 @@ h2{font-size:15px;letter-spacing:.015em;color:#c5cec8;font-weight:550}
  #papier{font-size:13px}
 }
 
+
+/* Live Hermes embeds */
+.hermes-live{padding:9px 0 12px;border-top:1px solid rgba(190,205,195,.12)}
+.hermes-live:first-child{border-top:0}
+.hermes-live iframe{display:block;width:100%;height:245px;border:0;border-radius:10px;background:#fff;color:#111}
+.hermes-live .bus-link{margin-top:6px}
+.bus{overflow:auto}
+@media(max-width:760px){.hermes-live iframe{height:225px}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -287,18 +295,18 @@ function rain(){
   },function(){$("rtxt").textContent="No se pudo cargar el tiempo";});
 }
 
-/* --- Autobuses: Hermes oficial como fuente de consulta en directo --- */
+/* --- Autobuses: paneles oficiales Hermes en vivo --- */
 var HERMES=[
- {title:"Churchilllaan → WoensXL",subtitle:"Líneas 323 y 404 · dirección Eindhoven Station",url:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22:%22NL:S:64051510%22,%22town%22:%22Eindhoven%22,%22name%22:%22Churchilllaan%22%7D"},
- {title:"WoensXL → Aeropuerto",subtitle:"Línea 400 · dirección Airport",url:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22:%22NL:S:64052010%22,%22town%22:%22Eindhoven%22,%22name%22:%22WoensXL%2FZH%20Catharina%22%7D"}
+ {title:"Churchilllaan → WoensXL",subtitle:"323 / 404 · Eindhoven Station",url:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64051510%22,%22town%22:%22Eindhoven%22,%22name%22:%22Churchilllaan%22%7D"},
+ {title:"WoensXL → Aeropuerto",subtitle:"400 · Airport",url:"https://www.hermes.nl/nl/resultaten/halte-informatie?stop=%7B%22stopid%22%3A%22NL:S:64052010%22,%22town%22:%22Eindhoven%22,%22name%22:%22WoensXL%2FZH%20Catharina%22%7D"}
 ];
 function renderHermesLinks(){
  HERMES.forEach(function(stop,i){
   var box=$("bus"+i);
   if(!box)return;
-  box.innerHTML='<div class="bus-group"><div class="bus-route-title">'+stop.title+'</div><div class="bus-state">'+stop.subtitle+'</div><a class="bus-link" href="'+stop.url+'" target="_blank" rel="noopener">Ver salidas actuales en Hermes ↗</a></div>';
+  box.innerHTML='<section class="hermes-live"><div class="bus-route-title">'+stop.title+'</div><div class="bus-state">'+stop.subtitle+'</div><iframe title="Salidas en vivo Hermes: '+stop.title+'" src="'+stop.url+'" loading="eager" referrerpolicy="strict-origin-when-cross-origin"></iframe><a class="bus-link" href="'+stop.url+'" target="_blank" rel="noopener">Abrir Hermes ↗</a></section>';
  });
- $("busup").textContent="Fuente oficial: Hermes · sus salidas se actualizan aproximadamente cada 25 segundos";
+ $("busup").textContent="Datos oficiales Hermes · la página de la parada se actualiza aprox. cada 25 s.";
 }
 /* --- agenda Google Calendar: OAuth de solo lectura + agenda agrupada --- */
 var GOOGLE_CLIENT_ID="338582084819-v6mm7auokf0ct40rni42h73nkcha0du2.apps.googleusercontent.com";
